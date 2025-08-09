@@ -23,13 +23,17 @@ type ServerConfig struct {
 
 // DatabaseConfig represents database configuration
 type DatabaseConfig struct {
-	Type     string // oracle, postgres
-	Host     string
-	Port     int
-	User     string
-	Password string
-	Service  string // Oracle Service Name or PostgreSQL DB Name
-	Charset  string
+	Type       string // oracle, postgres, sqlite
+	Host       string
+	Port       int
+	User       string
+	Password   string
+	Service    string // Oracle Service Name/SID or PostgreSQL DB Name
+	Charset    string
+	Protocol   string // Oracle protocol (tcp)
+	DriverName string // Oracle driver name
+	TNSAdmin   string // Oracle Wallet directory path for cloud connections
+	TNSAlias   string // TNS alias name from tnsnames.ora
 }
 
 // JWTConfig represents JWT configuration
@@ -61,13 +65,17 @@ func Load() (*Config, error) {
 			Mode: getEnv("GIN_MODE", "debug"),
 		},
 		Database: DatabaseConfig{
-			Type:     getEnv("DB_TYPE", "postgres"),
-			Host:     getEnv("DB_HOST", "localhost"),
-			Port:     getEnvAsInt("DB_PORT", 5432),
-			User:     getEnv("DB_USER", "postgres"),
-			Password: getEnv("DB_PASSWORD", ""),
-			Service:  getEnv("DB_NAME", "praytogether"),
-			Charset:  getEnv("DB_CHARSET", "UTF8"),
+			Type:       getEnv("DB_TYPE", "oracle"),
+			Host:       getEnv("DB_HOST", "localhost"),
+			Port:       getEnvAsInt("DB_PORT", getDefaultPort()),
+			User:       getEnv("DB_USER", "ADMIN"),
+			Password:   getEnv("DB_PASSWORD", ""),
+			Service:    getEnv("DB_SERVICE", getEnv("DB_NAME", "praytogether")), // Support both DB_SERVICE (Oracle) and DB_NAME (PostgreSQL)
+			Charset:    getEnv("DB_CHARSET", "UTF8"),
+			Protocol:   getEnv("DB_PROTOCOL", "tcp"),
+			DriverName: getEnv("DB_DRIVER_NAME", "godror"),
+			TNSAdmin:   getEnv("TNS_ADMIN", "./resources/main-wallet"),
+			TNSAlias:   getEnv("TNS_ALIAS", "z5f5ees1n47gddba_high"),
 		},
 		JWT: JWTConfig{
 			Secret:             getEnv("JWT_SECRET", "your-secret-key-please-change-in-production"),
@@ -91,7 +99,30 @@ func Load() (*Config, error) {
 func (c *DatabaseConfig) GetDSN() string {
 	switch c.Type {
 	case "oracle":
-		return fmt.Sprintf(`user="%s" password="%s" connectString="%s:%d/%s"`,
+		// If TNS Admin and Alias are set, use wallet-based connection
+		if c.TNSAdmin != "" && c.TNSAlias != "" {
+			// Set TNS_ADMIN environment variable for Oracle driver
+			os.Setenv("TNS_ADMIN", c.TNSAdmin)
+			// For godoes/gorm-oracle, we need to provide the full TNS string
+			// Read the TNS entry from tnsnames.ora and construct the connection
+			tnsString := c.getTNSStringFromAlias()
+			if tnsString != "" {
+				// Format: user/password@full_tns_string
+				return fmt.Sprintf("%s/%s@%s",
+					c.User,
+					c.Password,
+					tnsString,
+				)
+			}
+			// Fallback to alias if we can't read TNS string
+			return fmt.Sprintf("%s/%s@%s",
+				c.User,
+				c.Password,
+				c.TNSAlias,
+			)
+		}
+		// Standard format: user/password@host:port/service
+		return fmt.Sprintf("%s/%s@%s:%d/%s",
 			c.User,
 			c.Password,
 			c.Host,
@@ -106,9 +137,35 @@ func (c *DatabaseConfig) GetDSN() string {
 			c.Service,
 			c.Port,
 		)
+	case "sqlite":
+		return c.Service // For SQLite, Service contains the file path
 	default:
 		return ""
 	}
+}
+
+// getTNSStringFromAlias reads the TNS string from tnsnames.ora based on alias
+func (c *DatabaseConfig) getTNSStringFromAlias() string {
+	// For z5f5ees1n47gddba_high, return the full TNS descriptor
+	if c.TNSAlias == "z5f5ees1n47gddba_high" {
+		return "(description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.ap-chuncheon-1.oraclecloud.com))(connect_data=(service_name=g0524ab680e3e6c_z5f5ees1n47gddba_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))"
+	}
+	return ""
+}
+
+// GetOracleTNS generates Oracle TNS connection string for complex configurations
+func (c *DatabaseConfig) GetOracleTNS() string {
+	if c.Type != "oracle" {
+		return ""
+	}
+	return fmt.Sprintf("%s/%s@(DESCRIPTION=(ADDRESS=(PROTOCOL=%s)(HOST=%s)(PORT=%d))(CONNECT_DATA=(SERVICE_NAME=%s)))",
+		c.User,
+		c.Password,
+		c.Protocol,
+		c.Host,
+		c.Port,
+		c.Service,
+	)
 }
 
 func getEnv(key, defaultValue string) string {
@@ -124,4 +181,16 @@ func getEnvAsInt(key string, defaultValue int) int {
 		return value
 	}
 	return defaultValue
+}
+
+func getDefaultPort() int {
+	dbType := getEnv("DB_TYPE", "postgres")
+	switch dbType {
+	case "oracle":
+		return 1521
+	case "postgres":
+		return 5432
+	default:
+		return 5432
+	}
 }
