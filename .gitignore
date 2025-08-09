@@ -1,0 +1,96 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Project-specific binaries
+main
+server
+pray-together-api
+./main
+./server
+./pray-together-api
+
+# Test binary, built with `go test -c`
+*.test
+test.test
+
+# Output of the go coverage tool
+*.out
+coverage.html
+coverage.txt
+c.out
+mem.out
+cpu.out
+profile.out
+*.pprof
+pprof.*
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# Environment variables
+.env
+.env.*
+.env.local
+.env.*.local
+.env.bak
+*.env.backup
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+*~
+.DS_Store
+Thumbs.db
+*.sublime-*
+.vimrc
+.nvimrc
+
+# Log files
+*.log
+
+# Database files
+*.db
+*.sqlite
+
+# Firebase credentials
+*-firebase-adminsdk-*.json
+firebase-credentials.json
+
+# Build artifacts
+dist/
+build/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+.tmp/
+
+# Air live reloading
+.air.toml
+
+# Delve debugger
+__debug_bin*
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Process files
+*.pid
+
+# Go workspace files (Go 1.18+)
+go.work.sum
