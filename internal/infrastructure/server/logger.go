@@ -35,6 +35,11 @@ func LoggerMiddleware(cfg *config.Config) gin.HandlerFunc {
 			"user_agent", c.Request.UserAgent(),
 		}
 
+		// Add request ID if exists
+		if requestID, exists := c.Get("request_id"); exists {
+			fields = append(fields, "request_id", requestID)
+		}
+
 		if raw != "" {
 			fields = append(fields, "query", raw)
 		}

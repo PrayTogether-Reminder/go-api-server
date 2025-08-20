@@ -41,6 +41,9 @@ func New(cfg *config.Config, db *database.DB) *Server {
 	// Recovery 미들웨어 (패닉 복구)
 	router.Use(gin.CustomRecovery(recoveryHandler))
 
+	// Request ID 미들웨어
+	router.Use(middleware.RequestID())
+
 	// CORS 미들웨어
 	router.Use(middleware.CORS(cfg))
 
