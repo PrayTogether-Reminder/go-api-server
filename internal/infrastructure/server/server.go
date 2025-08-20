@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/delivery/http/middleware"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/infrastructure/config"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/infrastructure/database"
 	"github.com/gin-gonic/gin"
@@ -39,6 +40,9 @@ func New(cfg *config.Config, db *database.DB) *Server {
 
 	// Recovery 미들웨어 (패닉 복구)
 	router.Use(gin.CustomRecovery(recoveryHandler))
+
+	// CORS 미들웨어
+	router.Use(middleware.CORS(cfg))
 
 	// slog 로깅 미들웨어
 	router.Use(LoggerMiddleware(cfg))
