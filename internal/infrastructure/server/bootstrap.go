@@ -43,6 +43,7 @@ func (b *Bootstrap) SetupEngine() *gin.Engine {
 	router.Use(gin.CustomRecovery(b.recoveryHandler))
 	router.Use(middleware.RequestID())
 	router.Use(middleware.CORS(b.cfg))
+	router.Use(middleware.Timeout(middleware.DefaultTimeout)) // 30 second global timeout
 	router.Use(LoggerMiddleware(b.cfg))
 
 	// Note: Health endpoints are now handled in routes.go following Clean Architecture

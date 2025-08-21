@@ -58,10 +58,6 @@ func main() {
 
 	// Start server in goroutine
 	go func() {
-		slog.Info("Server starting",
-			"environment", env,
-			"port", cfg.App.Port,
-		)
 		serverErrors <- srv.Start()
 	}()
 
