@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/delivery/http/middleware"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/infrastructure/config"
 	"github.com/gin-gonic/gin"
 )
@@ -36,8 +37,8 @@ func LoggerMiddleware(cfg *config.Config) gin.HandlerFunc {
 		}
 
 		// Add request ID if exists
-		if requestID, exists := c.Get("request_id"); exists {
-			fields = append(fields, "request_id", requestID)
+		if requestID, exists := c.Get(middleware.RequestIDKey); exists {
+			fields = append(fields, middleware.RequestIDKey, requestID)
 		}
 
 		if raw != "" {
@@ -60,10 +61,7 @@ func LoggerMiddleware(cfg *config.Config) gin.HandlerFunc {
 		case status >= 300:
 			slog.Info(msg, fields...)
 		default:
-			// 200-299: 성공 응답은 debug 레벨로 (로그 노이즈 감소)
-			if cfg.IsDevelopment() {
-				slog.Debug(msg, fields...)
-			}
+			slog.Info(msg, fields...)
 		}
 	}
 }

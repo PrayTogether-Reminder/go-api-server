@@ -98,8 +98,8 @@ func Load(env string) (*Config, error) {
 			MaxAge:           getEnvAsInt("CORS_MAX_AGE", 86400),
 		},
 		Log: LogConfig{
-			Level:  getEnv("LOG_LEVEL", "info"),
-			Format: getEnv("LOG_FORMAT", "json"),
+			Level:  getEnv("LOG_LEVEL", "info"),  // debug , warn, error
+			Format: getEnv("LOG_FORMAT", "json"), // text
 		},
 		Server: ServerConfig{
 			ReadTimeout:     getEnvAsDuration("SERVER_READ_TIMEOUT", "15s"),
