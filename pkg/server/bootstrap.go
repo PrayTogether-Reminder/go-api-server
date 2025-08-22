@@ -1,13 +1,12 @@
 package server
 
 import (
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
+	"github.com/changhyeonkim/
+	"github.com/gin-gonic/gin"
 	"io"
 	"log/slog"
 	"net/http"
-
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/delivery/http/middleware"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/infrastructure/config"
-	"github.com/gin-gonic/gin"
 )
 
 // Bootstrap handles common server setup that can be reused across projects

@@ -1,9 +1,9 @@
 package middleware
 
 import (
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"time"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/infrastructure/config"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )

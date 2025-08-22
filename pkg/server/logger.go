@@ -1,12 +1,11 @@
 package server
 
 import (
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/handler/middleware"
+	"github.com/gin-gonic/gin"
 	"log/slog"
 	"time"
-
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/delivery/http/middleware"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/infrastructure/config"
-	"github.com/gin-gonic/gin"
 )
 
 // LoggerMiddleware returns a gin middleware for structured logging with slog

@@ -9,10 +9,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/delivery/http/routes"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/infrastructure/config"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/infrastructure/database"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/infrastructure/server"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/router"
+	"github.com/changhyeonkim/pray-together/go-api-server/pkg/server"
 )
 
 func main() {
@@ -45,13 +45,13 @@ func main() {
 
 	// Bootstrap server with common setup (Clean Architecture: no DB in bootstrap)
 	bootstrap := server.NewBootstrap(cfg)
-	router := bootstrap.SetupEngine()
+	ginRouter := bootstrap.SetupEngine()
 
 	// Setup application-specific routes
-	routes.Setup(router, cfg, db)
+	router.Setup(ginRouter, cfg, db)
 
 	// Create and start server
-	srv := server.New(cfg, router)
+	srv := server.New(cfg, ginRouter)
 
 	// Channel to receive server errors
 	serverErrors := make(chan error, 1)

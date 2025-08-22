@@ -3,11 +3,11 @@ package database
 import (
 	"context"
 	"fmt"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"log/slog"
 	"net/url"
 	"time"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/infrastructure/config"
 	oracle "github.com/godoes/gorm-oracle"
 	"gorm.io/gorm"
 )
