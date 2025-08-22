@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
-	"github.com/changhyeonkim/
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/handler/middleware"
 	"github.com/gin-gonic/gin"
 	"io"
 	"log/slog"
