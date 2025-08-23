@@ -1,0 +1,12 @@
+name: Create Branch from Issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  call_create_branch:
+    uses: PrayTogether-Reminder/.github/.github/workflows/create-branch-from-issue.yml@main
+    permissions:
+      issues: read
+      contents: write
