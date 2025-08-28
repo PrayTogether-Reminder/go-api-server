@@ -18,6 +18,10 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	// Initialize use case
 
 	// Health check endpoints (moved from bootstrap to maintain Clean Architecture)
+	// Health check endpoints (moved from bootstrap to maintain Clean Architecture)
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "hello world"})
+	})
 
 	// API v1 routes
 	v1 := router.Group("/api/v1")
