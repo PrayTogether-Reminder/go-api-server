@@ -2,36 +2,21 @@ package router
 
 import (
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/meta"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 )
 
 // Setup configures all application-specific routes using dependency injection
-// This follows Clean Architecture principles where dependencies are injected
 func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
-	// Initialize repositories
-
-	// Initialize service
-
-	// Initialize use case
-
-	// Health check endpoints (moved from bootstrap to maintain Clean Architecture)
-	// Health check endpoints (moved from bootstrap to maintain Clean Architecture)
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "hello world"})
-	})
+	// Meta handler (health check, app version, legal documents)
+	metaHandler := meta.NewHandler(cfg, db)
+	router.GET("/health", metaHandler.Health)
 
 	// API v1 routes
-	v1 := router.Group("/api/v1")
-	{
-		// Example endpoint
-		v1.GET("/ping", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{
-				"message": "pong",
-			})
-		})
-
-	}
+	// Domain routes will be added here when implementing features
+	// Example:
+	// v1 := router.Group("/api/v1")
+	// v1.POST("/members", memberHandler.Create)
+	// v1.POST("/rooms", roomHandler.Create)
 }
