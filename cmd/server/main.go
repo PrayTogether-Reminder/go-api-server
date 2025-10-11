@@ -3,39 +3,63 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/bootstrap"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/router"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
 )
 
 func main() {
 	// Parse command line flags
-	var env string
-	flag.StringVar(&env, "env", "local", "Environment (local|dev|prod)")
-	flag.Parse()
+	env := parseFlags()
 
-	// Initialize structured logger
-	setupLogger(env)
+	// Initialize logger
+	logger.Setup(env)
+	slog.Info("Starting application", "env", env)
+
+	// Run application
+	if err := run(env); err != nil {
+		slog.Error("Application failed", "error", err)
+		os.Exit(1)
+	}
+
+	slog.Info("Application shutdown complete")
+}
+
+// parseFlags parses command line arguments
+func parseFlags() string {
+	env := flag.String("env", "local", "Environment (local|dev|production)")
+	flag.Parse()
+	return *env
+}
+
+// run contains the main application logic
+func run(env string) error {
+	// Create root context for application lifecycle
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	// Load configuration
 	cfg, err := config.Load(env)
 	if err != nil {
-		slog.Error("Failed to load config", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to load config: %w", err)
 	}
+
+	slog.Info("Configuration loaded successfully", "port", cfg.App.Port)
 
 	// Connect to database
 	db, err := database.New(cfg)
 	if err != nil {
-		slog.Error("Failed to connect to database", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
@@ -43,21 +67,38 @@ func main() {
 		}
 	}()
 
-	// Bootstrap server with common setup (Clean Architecture: no DB in bootstrap)
+	// Setup server
+	srv := setupServer(cfg, db)
+
+	// Start server with graceful shutdown
+	return startWithGracefulShutdown(ctx, srv, cfg.Server.GracefulTimeout)
+}
+
+// setupServer initializes and configures the HTTP server
+func setupServer(cfg *config.Config, db *database.DB) *bootstrap.Server {
+	// Bootstrap server with common setup
 	boot := bootstrap.NewBootstrap(cfg)
 	ginRouter := boot.SetupEngine()
 
 	// Setup application-specific routes
 	router.Setup(ginRouter, cfg, db)
 
-	// Create and start server
-	srv := bootstrap.New(cfg, ginRouter)
+	slog.Info("Server configured successfully",
+		"port", cfg.App.Port,
+		"env", cfg.App.Env,
+	)
 
+	return bootstrap.New(cfg, ginRouter)
+}
+
+// startWithGracefulShutdown starts the server and handles graceful shutdown
+func startWithGracefulShutdown(ctx context.Context, srv *bootstrap.Server, gracefulTimeout time.Duration) error {
 	// Channel to receive server errors
 	serverErrors := make(chan error, 1)
 
 	// Start server in goroutine
 	go func() {
+		slog.Info("Server starting", "port", srv.Port())
 		serverErrors <- srv.Start()
 	}()
 
@@ -70,45 +111,25 @@ func main() {
 	case err := <-serverErrors:
 		// Server failed to start or stopped unexpectedly
 		if err != nil && err != http.ErrServerClosed {
-			slog.Error("Server error", "error", err)
-			// Still perform cleanup via deferred functions
-			return
+			return fmt.Errorf("server error: %w", err)
 		}
+		return nil
+
 	case sig := <-quit:
 		// Received shutdown signal
-		slog.Info("Shutting down server", "signal", sig.String())
+		slog.Info("Shutdown signal received", "signal", sig.String())
+
+		// Create shutdown context with timeout
+		shutdownCtx, cancel := context.WithTimeout(ctx, gracefulTimeout)
+		defer cancel()
+
+		// Attempt graceful shutdown
+		slog.Info("Initiating graceful shutdown", "timeout", gracefulTimeout)
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			return fmt.Errorf("server forced shutdown: %w", err)
+		}
+
+		slog.Info("Server shutdown gracefully")
+		return nil
 	}
-
-	// Graceful shutdown with timeout (only if we received a signal)
-	// If server errored on startup, it's already stopped
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.GracefulTimeout)
-	defer cancel()
-
-	if err := srv.Shutdown(ctx); err != nil {
-		slog.Error("Server forced to shutdown", "error", err)
-		// Don't call os.Exit here - let deferred functions run
-	}
-
-	slog.Info("Server shutdown complete")
-}
-
-// setupLogger configures the global slog logger based on environment
-func setupLogger(env string) {
-	var handler slog.Handler
-	opts := &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}
-
-	if env == "prod" {
-		// Production: JSON format, error level
-		opts.Level = slog.LevelError
-		handler = slog.NewJSONHandler(os.Stdout, opts)
-	} else {
-		// Development: Text format, debug level
-		opts.Level = slog.LevelDebug
-		handler = slog.NewTextHandler(os.Stdout, opts)
-	}
-
-	logger := slog.New(handler)
-	slog.SetDefault(logger)
 }

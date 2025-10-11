@@ -29,6 +29,11 @@ func New(cfg *config.Config, handler http.Handler) *Server {
 	}
 }
 
+// Port returns the server port
+func (s *Server) Port() int {
+	return s.cfg.App.Port
+}
+
 // Start starts the HTTP server
 func (s *Server) Start() error {
 	slog.Info("Starting server",

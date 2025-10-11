@@ -15,7 +15,7 @@ func Setup(env string) {
 	switch env {
 	case "production", "prod":
 		// Production: JSON format, warn level
-		opts.Level = slog.LevelWarn
+		opts.Level = slog.LevelInfo
 		handler = slog.NewJSONHandler(os.Stdout, opts)
 	case "local", "dev", "development":
 		// Development: Text format, debug level
