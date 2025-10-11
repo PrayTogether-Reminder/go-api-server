@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
 	"log/slog"
 	"net/http"
 	"os"
@@ -10,7 +11,6 @@ import (
 	"syscall"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/infrastructure/database"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/router"
 	"github.com/changhyeonkim/pray-together/go-api-server/pkg/server"
 )

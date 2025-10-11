@@ -1,11 +1,11 @@
-package server
+package middleware
 
 import (
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/handler/middleware"
-	"github.com/gin-gonic/gin"
 	"log/slog"
 	"time"
+
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
+	"github.com/gin-gonic/gin"
 )
 
 // LoggerMiddleware returns a gin middleware for structured logging with slog
@@ -36,8 +36,8 @@ func LoggerMiddleware(cfg *config.Config) gin.HandlerFunc {
 		}
 
 		// Add request ID if exists
-		if requestID, exists := c.Get(middleware.RequestIDKey); exists {
-			fields = append(fields, middleware.RequestIDKey, requestID)
+		if requestID, exists := c.Get(RequestIDKey); exists {
+			fields = append(fields, RequestIDKey, requestID)
 		}
 
 		if raw != "" {

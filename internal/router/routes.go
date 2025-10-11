@@ -2,9 +2,9 @@ package router
 
 import (
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
 	"net/http"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/infrastructure/database"
 	"github.com/gin-gonic/gin"
 )
 
