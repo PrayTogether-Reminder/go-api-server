@@ -1,4 +1,4 @@
-package server
+package bootstrap
 
 import (
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"

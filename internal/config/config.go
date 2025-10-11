@@ -36,6 +36,7 @@ type DatabaseConfig struct {
 	MaxIdleConns    int
 	MaxOpenConns    int
 	ConnMaxLifetime time.Duration
+	ConnMaxIdleTime time.Duration
 }
 
 type JWTConfig struct {
@@ -84,6 +85,7 @@ func Load(env string) (*Config, error) {
 			MaxIdleConns:    getEnvAsInt("DB_MAX_IDLE_CONNS", 10),
 			MaxOpenConns:    getEnvAsInt("DB_MAX_OPEN_CONNS", 100),
 			ConnMaxLifetime: getEnvAsDuration("DB_CONN_MAX_LIFETIME", "1h"),
+			ConnMaxIdleTime: getEnvAsDuration("DB_CONN_MAX_IDLE_TIME", "10m"),
 		},
 		JWT: JWTConfig{
 			Secret:        getEnv("JWT_SECRET", ""),

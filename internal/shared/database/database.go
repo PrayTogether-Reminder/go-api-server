@@ -45,6 +45,7 @@ func New(cfg *config.Config) (*DB, error) {
 	sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConns)
 	sqlDB.SetMaxOpenConns(cfg.Database.MaxOpenConns)
 	sqlDB.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
+	sqlDB.SetConnMaxIdleTime(cfg.Database.ConnMaxIdleTime)
 
 	// Test connection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -61,6 +62,7 @@ func New(cfg *config.Config) (*DB, error) {
 		"max_idle_conns", cfg.Database.MaxIdleConns,
 		"max_open_conns", cfg.Database.MaxOpenConns,
 		"conn_max_lifetime", cfg.Database.ConnMaxLifetime.String(),
+		"conn_max_idle_time", cfg.Database.ConnMaxIdleTime.String(),
 	)
 
 	return &DB{DB: db}, nil
