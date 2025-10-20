@@ -24,15 +24,15 @@ func main() {
 
 	// Initialize logger
 	logger.Setup(env)
-	slog.Info("Starting application", "env", env)
+	slog.Info("서버 초기화 시작", "env", env)
 
 	// Run application
 	if err := run(env); err != nil {
-		slog.Error("Application failed", "error", err)
+		slog.Error("서버 초기화 실패", "error", err)
 		os.Exit(1)
 	}
 
-	slog.Info("Application shutdown complete")
+	slog.Info("서버 종료 완료")
 }
 
 // parseFlags parses command line arguments
@@ -51,19 +51,19 @@ func run(env string) error {
 	// Load configuration
 	cfg, err := config.Load(env)
 	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
+		return fmt.Errorf("설정 로드 실패: %w", err)
 	}
 
-	slog.Info("Configuration loaded successfully", "port", cfg.App.Port)
+	slog.Info("환경 변수 로드 성공", "port", cfg.App.Port)
 
 	// Connect to database
 	db, err := database.New(cfg)
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
+		return fmt.Errorf("데이터베이스 연결 실패: %w", err)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			slog.Error("Failed to close database", "error", err)
+			slog.Error("데이터베이스 종료 실패", "error", err)
 		}
 	}()
 
@@ -83,7 +83,7 @@ func setupServer(cfg *config.Config, db *database.DB) *bootstrap.Server {
 	// Setup application-specific routes
 	router.Setup(ginRouter, cfg, db)
 
-	slog.Info("Server configured successfully",
+	slog.Info("서버 설정 완료",
 		"port", cfg.App.Port,
 		"env", cfg.App.Env,
 	)
@@ -98,7 +98,7 @@ func startWithGracefulShutdown(ctx context.Context, srv *bootstrap.Server, grace
 
 	// Start server in goroutine
 	go func() {
-		slog.Info("Server starting", "port", srv.Port())
+		slog.Info("서버 시작 중", "port", srv.Port())
 		serverErrors <- srv.Start()
 	}()
 
@@ -111,25 +111,25 @@ func startWithGracefulShutdown(ctx context.Context, srv *bootstrap.Server, grace
 	case err := <-serverErrors:
 		// Server failed to start or stopped unexpectedly
 		if err != nil && err != http.ErrServerClosed {
-			return fmt.Errorf("server error: %w", err)
+			return fmt.Errorf("서버 오류: %w", err)
 		}
 		return nil
 
 	case sig := <-quit:
 		// Received shutdown signal
-		slog.Info("Shutdown signal received", "signal", sig.String())
+		slog.Info("종료 신호 수신됨", "signal", sig.String())
 
 		// Create shutdown context with timeout
 		shutdownCtx, cancel := context.WithTimeout(ctx, gracefulTimeout)
 		defer cancel()
 
 		// Attempt graceful shutdown
-		slog.Info("Initiating graceful shutdown", "timeout", gracefulTimeout)
+		slog.Info("정상 종료 시작", "timeout", gracefulTimeout)
 		if err := srv.Shutdown(shutdownCtx); err != nil {
-			return fmt.Errorf("server forced shutdown: %w", err)
+			return fmt.Errorf("서버 강제 종료: %w", err)
 		}
 
-		slog.Info("Server shutdown gracefully")
+		slog.Info("서버가 정상적으로 종료되었습니다")
 		return nil
 	}
 }

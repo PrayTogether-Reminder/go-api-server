@@ -30,5 +30,5 @@ func Setup(env string) {
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 
-	slog.Info("Logger initialized", "env", env, "level", opts.Level.Level().String())
+	slog.Info("Logger 초기화", "env", env, "level", opts.Level.Level().String())
 }

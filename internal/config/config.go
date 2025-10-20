@@ -67,7 +67,7 @@ type ServerConfig struct {
 
 func Load(env string) (*Config, error) {
 	if err := loadEnvFile(env); err != nil {
-		return nil, fmt.Errorf("failed to load env file: %w", err)
+		return nil, fmt.Errorf("환경 변수 로드 실패: %w", err)
 	}
 
 	cfg := &Config{
@@ -99,7 +99,7 @@ func Load(env string) (*Config, error) {
 			AllowCredentials: getEnvAsBool("CORS_ALLOW_CREDENTIALS", true),
 			MaxAge:           getEnvAsInt("CORS_MAX_AGE", 86400),
 		},
-		Log: LogConfig{
+		Log: LogConfig{ // todo: logger 가 처리를 하고 있어서 없어도 될 지도
 			Level:  getEnv("LOG_LEVEL", "info"),  // debug , warn, error
 			Format: getEnv("LOG_FORMAT", "json"), // text
 		},
@@ -112,7 +112,7 @@ func Load(env string) (*Config, error) {
 	}
 
 	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("config validation failed: %w", err)
+		return nil, fmt.Errorf("환경 변수 검증 실패 : %w", err)
 	}
 
 	return cfg, nil
@@ -122,17 +122,17 @@ func loadEnvFile(env string) error {
 	envFile := fmt.Sprintf(".env.%s", env)
 
 	if _, err := os.Stat(envFile); os.IsNotExist(err) {
-		slog.Warn("Environment file not found, using system environment variables",
+		slog.Warn("환경 변수 파일을 찾을 수 없습니다. 시스템 환경 변수를 사용합니다.",
 			"file", envFile)
 		return nil
 	}
 
 	if err := godotenv.Load(envFile); err != nil {
-		return fmt.Errorf("error loading %s file: %w", envFile, err)
+		return fmt.Errorf("환경 변수 파일 로드 오류: %s: %w", envFile, err)
 	}
 
 	absPath, _ := filepath.Abs(envFile)
-	slog.Info("Environment file loaded", "file", absPath)
+	slog.Info("환경 변수 파일 로드", "file", absPath)
 	return nil
 }
 
@@ -141,29 +141,29 @@ func (c *Config) Validate() error {
 
 	// App validation
 	if c.App.Port < 1 || c.App.Port > 65535 {
-		errors = append(errors, "invalid port number")
+		errors = append(errors, "유효하지 않은 포트 번호")
 	}
 
 	// Database validation
 	if c.Database.Host == "" {
-		errors = append(errors, "database host is required")
+		errors = append(errors, "데이터베이스 Host가 필요합니다")
 	}
 	if c.Database.Service == "" {
-		errors = append(errors, "database service is required")
+		errors = append(errors, "데이터베이스 Service가 필요합니다")
 	}
 	if c.Database.User == "" {
-		errors = append(errors, "database user is required")
+		errors = append(errors, "데이터베이스 User가 필요합니다")
 	}
 	if c.Database.Password == "" {
-		errors = append(errors, "database password is required")
+		errors = append(errors, "데이터베이스 Password가 필요합니다")
 	}
 
 	// JWT validation
 	if c.JWT.Secret == "" {
-		errors = append(errors, "JWT secret is required")
+		errors = append(errors, "JWT Secret Key가 필요합니다")
 	}
 	if len(c.JWT.Secret) < 32 {
-		errors = append(errors, "JWT secret must be at least 32 characters")
+		errors = append(errors, "JWT Secret Key는 32자 이상이어야 합니다")
 	}
 
 	// Log validation
@@ -174,7 +174,7 @@ func (c *Config) Validate() error {
 		"error": true,
 	}
 	if !validLogLevels[c.Log.Level] {
-		errors = append(errors, fmt.Sprintf("invalid log level: %s", c.Log.Level))
+		errors = append(errors, fmt.Sprintf("유효하지 않은 로그 레벨: %s", c.Log.Level))
 	}
 
 	validLogFormats := map[string]bool{
@@ -182,11 +182,11 @@ func (c *Config) Validate() error {
 		"text": true,
 	}
 	if !validLogFormats[c.Log.Format] {
-		errors = append(errors, fmt.Sprintf("invalid log format: %s", c.Log.Format))
+		errors = append(errors, fmt.Sprintf("유효하지 않은 로그 형식: %s", c.Log.Format))
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf("validation errors: %s", strings.Join(errors, ", "))
+		return fmt.Errorf("유효성 검사 오류: %s", strings.Join(errors, ", "))
 	}
 
 	return nil

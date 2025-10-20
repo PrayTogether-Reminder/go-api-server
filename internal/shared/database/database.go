@@ -32,13 +32,13 @@ func New(cfg *config.Config) (*DB, error) {
 
 	db, err := gorm.Open(oracle.Open(dsn), gormConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("데이터베이스 연결 실패: %w", err)
 	}
 
 	// Get underlying SQL database
 	sqlDB, err := db.DB()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get database instance: %w", err)
+		return nil, fmt.Errorf("데이터베이스 인스턴스 가져오기 실패: %w", err)
 	}
 
 	// Configure connection pool
@@ -52,7 +52,7 @@ func New(cfg *config.Config) (*DB, error) {
 	defer cancel()
 
 	if err := sqlDB.PingContext(ctx); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		return nil, fmt.Errorf("데이터베이스 핑 실패: %w", err)
 	}
 
 	// 연결 설정 정보 로깅 (개발자가 확인 가능하도록)
@@ -95,10 +95,10 @@ func (db *DB) Close() error {
 	}
 
 	if err := sqlDB.Close(); err != nil {
-		return fmt.Errorf("failed to close database: %w", err)
+		return fmt.Errorf("데이터베이스 종료 실패: %w", err)
 	}
 
-	slog.Info("Database connection closed")
+	slog.Info("데이터베이스 연결이 종료되었습니다")
 	return nil
 }
 
@@ -106,11 +106,11 @@ func (db *DB) Close() error {
 func (db *DB) HealthCheck(ctx context.Context) error {
 	sqlDB, err := db.DB.DB()
 	if err != nil {
-		return fmt.Errorf("failed to get database instance: %w", err)
+		return fmt.Errorf("데이터베이스 인스턴스 가져오기 실패: %w", err)
 	}
 
 	if err := sqlDB.PingContext(ctx); err != nil {
-		return fmt.Errorf("database health check failed: %w", err)
+		return fmt.Errorf("데이터베이스 상태 확인 실패: %w", err)
 	}
 
 	return nil
@@ -119,9 +119,9 @@ func (db *DB) HealthCheck(ctx context.Context) error {
 // AutoMigrate runs auto migration for given models
 func (db *DB) AutoMigrate(models ...interface{}) error {
 	if err := db.DB.AutoMigrate(models...); err != nil {
-		return fmt.Errorf("auto migration failed: %w", err)
+		return fmt.Errorf("자동 마이그레이션 실패: %w", err)
 	}
-	slog.Info("Database migration completed successfully")
+	slog.Info("데이터베이스 마이그레이션 완료")
 	return nil
 }
 
