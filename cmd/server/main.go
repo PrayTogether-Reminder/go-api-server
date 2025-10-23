@@ -32,7 +32,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info("서버 종료 완료")
+	slog.Info("서버 종료 완료", "env", env)
 }
 
 // parseFlags parses command line arguments
@@ -54,7 +54,7 @@ func run(env string) error {
 		return fmt.Errorf("설정 로드 실패: %w", err)
 	}
 
-	slog.Info("환경 변수 로드 성공", "port", cfg.App.Port)
+	slog.Info("환경 변수 로드 성공")
 
 	// Connect to database
 	db, err := database.New(cfg)
@@ -78,17 +78,16 @@ func run(env string) error {
 func setupServer(cfg *config.Config, db *database.DB) *bootstrap.Server {
 	// Bootstrap server with common setup
 	boot := bootstrap.NewBootstrap(cfg)
-	ginRouter := boot.SetupEngine()
+	ginEngine := boot.SetupEngine()
 
 	// Setup application-specific routes
-	router.Setup(ginRouter, cfg, db)
+	router.Setup(ginEngine, cfg, db)
 
 	slog.Info("서버 설정 완료",
-		"port", cfg.App.Port,
 		"env", cfg.App.Env,
 	)
 
-	return bootstrap.New(cfg, ginRouter)
+	return bootstrap.New(cfg, ginEngine)
 }
 
 // startWithGracefulShutdown starts the server and handles graceful shutdown
@@ -98,7 +97,6 @@ func startWithGracefulShutdown(ctx context.Context, srv *bootstrap.Server, grace
 
 	// Start server in goroutine
 	go func() {
-		slog.Info("서버 시작 중", "port", srv.Port())
 		serverErrors <- srv.Start()
 	}()
 
@@ -124,12 +122,10 @@ func startWithGracefulShutdown(ctx context.Context, srv *bootstrap.Server, grace
 		defer cancel()
 
 		// Attempt graceful shutdown
-		slog.Info("정상 종료 시작", "timeout", gracefulTimeout)
+		slog.Info("서버 종료 중...")
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			return fmt.Errorf("서버 강제 종료: %w", err)
 		}
-
-		slog.Info("서버가 정상적으로 종료되었습니다")
 		return nil
 	}
 }

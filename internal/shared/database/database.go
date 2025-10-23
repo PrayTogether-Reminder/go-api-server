@@ -24,7 +24,7 @@ func New(cfg *config.Config) (*DB, error) {
 	gormConfig := &gorm.Config{
 		Logger:                 newLogger(cfg),
 		PrepareStmt:            true, // Prepared statements for better performance
-		SkipDefaultTransaction: true, // Skip default transaction for better performance
+		SkipDefaultTransaction: true, // Skip default transaction for better performance, pass tx 1.BEGIN 2.INSERT(QUERY) 3.COMMIT (3 network)
 		NowFunc: func() time.Time {
 			return time.Now().UTC() // created_at, updated_at 등에 UTC 사용
 		},
@@ -55,8 +55,7 @@ func New(cfg *config.Config) (*DB, error) {
 		return nil, fmt.Errorf("데이터베이스 핑 실패: %w", err)
 	}
 
-	// 연결 설정 정보 로깅 (개발자가 확인 가능하도록)
-	slog.Info("Database connected successfully",
+	slog.Info("데이터베이스 연결 성공",
 		"host", cfg.Database.Host,
 		"service", cfg.Database.Service,
 		"max_idle_conns", cfg.Database.MaxIdleConns,

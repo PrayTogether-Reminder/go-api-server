@@ -52,6 +52,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
-	slog.Info("서버 종료 중...")
-	return s.server.Shutdown(ctx)
+	err := s.server.Shutdown(ctx)
+	return err
 }

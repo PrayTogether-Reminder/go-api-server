@@ -17,7 +17,7 @@ type GormLogger struct {
 	logger               *slog.Logger
 	SlowThreshold        time.Duration
 	IgnoreRecordNotFound bool
-	ParameterizedQueries bool
+	HideSqlInLog         bool
 	LogLevel             gormlogger.LogLevel
 }
 
@@ -36,8 +36,8 @@ func newLogger(cfg *config.Config) gormlogger.Interface {
 	return &GormLogger{
 		logger:               slog.With("component", "gorm"),
 		SlowThreshold:        200 * time.Millisecond,
-		IgnoreRecordNotFound: true,
-		ParameterizedQueries: cfg.IsProduction(), // Hide query parameters in production
+		IgnoreRecordNotFound: true,               // not logging db level not found
+		HideSqlInLog:         cfg.IsProduction(), // Hide query parameters in production
 		LogLevel:             logLevel,
 	}
 }
@@ -97,7 +97,7 @@ func (l *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql 
 		)
 
 	case l.LogLevel >= gormlogger.Info:
-		if l.ParameterizedQueries {
+		if l.HideSqlInLog {
 			l.logger.DebugContext(ctx, "SQL query executed",
 				"elapsed", elapsed.String(),
 				"rows", rows,

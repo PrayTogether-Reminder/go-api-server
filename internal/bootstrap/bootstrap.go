@@ -35,20 +35,20 @@ func (b *Bootstrap) SetupEngine() *gin.Engine {
 	gin.DefaultWriter = io.Discard
 	gin.DefaultErrorWriter = io.Discard
 
-	// Create router without default middleware
-	router := gin.New()
+	// Create engine without default middleware
+	engine := gin.New()
 
 	// Essential middleware (common for all projects)
-	router.Use(gin.CustomRecovery(b.recoveryHandler))
-	router.Use(middleware.RequestID())
-	router.Use(middleware.CORS(b.cfg))
-	router.Use(middleware.Timeout(middleware.DefaultTimeout)) // 30 second global timeout
-	router.Use(middleware.LoggerMiddleware(b.cfg))
+	engine.Use(gin.CustomRecovery(b.recoveryHandler))
+	engine.Use(middleware.RequestID())
+	engine.Use(middleware.CORS(b.cfg))
+	engine.Use(middleware.Timeout(middleware.DefaultTimeout)) // 30 second global timeout
+	engine.Use(middleware.LoggerMiddleware())
 
 	// Note: Health endpoints are now handled in routes.go following Clean Architecture
 	// This keeps the bootstrap focused on middleware setup only
 
-	return router
+	return engine
 }
 
 // recoveryHandler handles panics
