@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/validator"
 	"log/slog"
 	"net/http"
 	"os"
@@ -79,6 +80,13 @@ func setupServer(cfg *config.Config, db *database.DB) *bootstrap.Server {
 	// Bootstrap server with common setup
 	boot := bootstrap.NewBootstrap(cfg)
 	ginEngine := boot.SetupEngine()
+
+	// register custom validator
+	err := validator.Register()
+	if err != nil {
+		slog.Error("Custom Validator 등록 실패", "error", err)
+		panic(err)
+	}
 
 	// Setup application-specific routes
 	router.Setup(ginEngine, cfg, db)
