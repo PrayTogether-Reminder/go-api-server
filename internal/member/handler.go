@@ -1,10 +1,7 @@
 package member
 
 import (
-	"net/http"
-
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/validator"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/handler"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,22 +18,16 @@ func NewMemberHandler(memberService MemberService) *MemberHandler {
 func (m *MemberHandler) Signup(c *gin.Context) {
 	var request SignupRequest
 
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.Error(err)
-		if resp, ok := validator.ToErrorResponse(err); ok {
-			c.JSON(http.StatusBadRequest, resp)
-		} else {
-			c.JSON(http.StatusBadRequest, sharedError.InvalidRequest.Response(""))
-		}
+	// Parse and validate JSON request
+	if !handler.BindJSON(c, &request) {
 		return
 	}
 
 	// TODO: 비즈니스 로직 구현
 	// err := m.memberService.Signup(c.Request.Context(), &request)
 	// if err != nil {
-	//     c.Error(err)
-	//     c.JSON(http.StatusInternalServerError, sharedError.InternalServerError.Response(""))
+	//     handler.RespondError(c, err, sharedError.InternalServerError)
 	//     return
 	// }
-	// c.JSON(http.StatusCreated, gin.H{"message": "회원가입이 완료되었습니다"})
+	// handler.RespondJSON(c, 201, gin.H{"message": "회원가입이 완료되었습니다"})
 }

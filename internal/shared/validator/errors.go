@@ -23,7 +23,8 @@ func ToErrorResponse(err error) (*sharedError.ErrorResponse, bool) {
 	fieldErr := validationErrors[0]
 	message := getErrorMessage(fieldErr)
 
-	resp := sharedError.ValidationFailed.Response(message)
+	resp := sharedError.ValidationFailed
+	resp.Message = message
 	return &resp, true
 }
 
