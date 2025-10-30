@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/validator"
 	"log/slog"
 	"net/http"
 	"os"
@@ -17,6 +16,7 @@ import (
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/router"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/validator"
 )
 
 func main() {
@@ -81,10 +81,9 @@ func setupServer(cfg *config.Config, db *database.DB) *bootstrap.Server {
 	boot := bootstrap.NewBootstrap(cfg)
 	ginEngine := boot.SetupEngine()
 
-	// register custom validator
-	err := validator.Register()
-	if err != nil {
-		slog.Error("Custom Validator 등록 실패", "error", err)
+	// Register common validators
+	if err := validator.RegisterAll(); err != nil {
+		slog.Error("공통 Validator 등록 실패", "error", err)
 		panic(err)
 	}
 
