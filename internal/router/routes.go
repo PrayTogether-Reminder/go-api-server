@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/meta"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
 	"github.com/gin-gonic/gin"
@@ -13,10 +14,18 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	metaHandler := meta.NewHandler(cfg, db)
 	router.GET("/health", metaHandler.Health)
 
+	// repository
+	memberRepository := member.NewMemberRepository(db.DB)
+
+	// service
+	memberService := member.NewMemberService(memberRepository)
+
+	// handler
+	memberHandler := member.NewMemberHandler(memberService)
+
 	// API v1 routes
-	// Domain routes will be added here when implementing features
-	// Example:
-	// v1 := router.Group("/api/v1")
-	// v1.POST("/members", memberHandler.Create)
-	// v1.POST("/rooms", roomHandler.Create)
+	authV1 := router.Group("/api/v1/auth")
+	{
+		authV1.POST("/signup", memberHandler.Signup)
+	}
 }

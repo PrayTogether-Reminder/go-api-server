@@ -32,7 +32,7 @@ func ToErrorResponse(err error) (*sharedError.ErrorResponse, bool) {
 func getErrorMessage(fe validator.FieldError) string {
 	switch fe.Tag() {
 	case "required":
-		return "필수 항목입니다."
+		return "필수 항목을 입력해 주세요."
 	case "email":
 		return "이메일 형식이 올바르지 않습니다."
 	case "min":

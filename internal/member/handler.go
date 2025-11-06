@@ -1,6 +1,7 @@
 package member
 
 import (
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/handler"
 	"github.com/gin-gonic/gin"
 )
@@ -23,11 +24,15 @@ func (m *MemberHandler) Signup(c *gin.Context) {
 		return
 	}
 
-	// TODO: 비즈니스 로직 구현
-	// err := m.memberService.Signup(c.Request.Context(), &request)
-	// if err != nil {
-	//     handler.RespondError(c, err, sharedError.InternalServerError)
-	//     return
-	// }
-	// handler.RespondJSON(c, 201, gin.H{"message": "회원가입이 완료되었습니다"})
+	err := m.memberService.Signup(c.Request.Context(), &request)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			handler.RespondError(c, err, resp)
+			return
+		}
+
+		handler.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+	c.JSON(201, gin.H{})
 }

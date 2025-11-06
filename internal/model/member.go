@@ -1,11 +1,7 @@
 package model
 
 import (
-	"errors"
 	"regexp"
-	"strings"
-
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/constants"
 )
 
 // emailRegex for email validation
@@ -32,56 +28,11 @@ func (*Member) TableName() string {
 
 // NewMember creates a new Member instance with validation
 // Factory method pattern (Java의 static create 메서드와 동일)
-func NewMember(name, email, password string) (*Member, error) {
-	// Trim whitespace
-	name = strings.TrimSpace(name)
-	email = strings.TrimSpace(email)
-	email = strings.ToLower(email) // 이메일은 소문자로 정규화
-
-	// Validation
-	if err := validateMemberFields(name, email, password); err != nil {
-		return nil, err
-	}
-
+func NewMember(name, email, password string) *Member {
 	// Note: password should be hashed before storing (handled in service layer)
 	return &Member{
 		Name:     name,
 		Email:    email,
 		Password: password, // This should be hashed password
-	}, nil
-}
-
-// validateMemberFields validates member creation input
-func validateMemberFields(name, email, password string) error {
-	// Name validation
-	if name == "" {
-		return errors.New(constants.ErrMemberNameEmpty)
 	}
-	if len(name) > constants.MemberNameMaxLength {
-		return errors.New(constants.ErrMemberNameTooLong)
-	}
-
-	// Email validation
-	if email == "" {
-		return errors.New(constants.ErrMemberEmailEmpty)
-	}
-	if len(email) > constants.MemberEmailMaxLength {
-		return errors.New(constants.ErrMemberEmailTooLong)
-	}
-	if !emailRegex.MatchString(email) {
-		return errors.New(constants.ErrMemberEmailInvalid)
-	}
-
-	// Password validation
-	if password == "" {
-		return errors.New(constants.ErrMemberPasswordEmpty)
-	}
-	if len(password) < constants.MemberPasswordMinLength {
-		return errors.New(constants.ErrMemberPasswordTooShort)
-	}
-	if len(password) > constants.MemberPasswordMaxLength {
-		return errors.New(constants.ErrMemberPasswordTooLong)
-	}
-
-	return nil
 }
