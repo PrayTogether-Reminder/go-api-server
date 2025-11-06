@@ -15,10 +15,10 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	router.GET("/health", metaHandler.Health)
 
 	// repository
-	memberRepository := member.NewMemberRepository(db.DB)
+	memberRepository := member.NewMemberRepository()
 
 	// service
-	memberService := member.NewMemberService(memberRepository)
+	memberService := member.NewMemberService(db.DB, memberRepository)
 
 	// handler
 	memberHandler := member.NewMemberHandler(memberService)

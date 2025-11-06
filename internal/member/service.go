@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -15,18 +16,20 @@ type MemberService interface {
 }
 
 type memberService struct {
+	db               *gorm.DB
 	memberRepository MemberRepository
 }
 
-func NewMemberService(memberRepository MemberRepository) MemberService {
+func NewMemberService(db *gorm.DB, memberRepository MemberRepository) MemberService {
 	return &memberService{
+		db:               db,
 		memberRepository: memberRepository,
 	}
 }
 
 func (m *memberService) Signup(ctx context.Context, request *SignupRequest) error {
 	log := logger.FromContext(ctx)
-	return m.memberRepository.Transaction(ctx, func(tx *gorm.DB) error {
+	return database.WithTransaction(ctx, m.db, func(tx *gorm.DB) error {
 		exists, err := m.memberRepository.IsExist(ctx, tx, request.Email)
 		if err != nil {
 			log.Error("Failed to check member existence", "error", err)

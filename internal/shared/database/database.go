@@ -3,10 +3,11 @@ package database
 import (
 	"context"
 	"fmt"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"log/slog"
 	"net/url"
 	"time"
+
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 
 	oracle "github.com/godoes/gorm-oracle"
 	"gorm.io/gorm"
@@ -122,11 +123,6 @@ func (db *DB) AutoMigrate(models ...interface{}) error {
 	}
 	slog.Info("데이터베이스 마이그레이션 완료")
 	return nil
-}
-
-// Transaction executes a function within a database transaction
-func (db *DB) Transaction(fn func(*gorm.DB) error) error {
-	return db.DB.Transaction(fn)
 }
 
 // WithContext returns a new DB with context
