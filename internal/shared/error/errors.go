@@ -6,11 +6,16 @@ import (
 )
 
 type DomainError interface {
+	error // Embed standard error interface
 	Info() string
 }
 
 type domainSentinel struct {
 	errInfo string
+}
+
+func (e *domainSentinel) Error() string {
+	return e.errInfo
 }
 
 func (e *domainSentinel) Info() string {

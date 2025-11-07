@@ -2,9 +2,13 @@ package middleware
 
 import (
 	"errors"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
+	"log/slog"
+	"net/http"
 	"strings"
 	"time"
+
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -17,12 +21,48 @@ const (
 	UserEmailKey        = "user_email"
 )
 
-var (
-	ErrMissingToken  = errors.New("missing authorization token")
-	ErrInvalidToken  = errors.New("invalid authorization token")
-	ErrExpiredToken  = errors.New("token has expired")
-	ErrInvalidClaims = errors.New("invalid token claims")
+// JWT error constants (errInfo)
+const (
+	missingToken  = "MISSING_TOKEN"
+	invalidToken  = "INVALID_TOKEN"
+	expiredToken  = "EXPIRED_TOKEN"
+	invalidClaims = "INVALID_CLAIMS"
 )
+
+// Domain errors
+var (
+	ErrMissingToken  = sharedError.NewDomainError(missingToken)
+	ErrInvalidToken  = sharedError.NewDomainError(invalidToken)
+	ErrExpiredToken  = sharedError.NewDomainError(expiredToken)
+	ErrInvalidClaims = sharedError.NewDomainError(invalidClaims)
+)
+
+// Register JWT error responses
+func init() {
+	sharedError.RegisterDomainErrorResponse(missingToken, sharedError.ErrorResponse{
+		Status:  http.StatusUnauthorized,
+		Code:    "AUTH-001",
+		Message: "로그인을 해주세요.",
+	})
+
+	sharedError.RegisterDomainErrorResponse(invalidToken, sharedError.ErrorResponse{
+		Status:  http.StatusUnauthorized,
+		Code:    "AUTH-002",
+		Message: "로그인을 해주세요.",
+	})
+
+	sharedError.RegisterDomainErrorResponse(expiredToken, sharedError.ErrorResponse{
+		Status:  http.StatusUnauthorized,
+		Code:    "AUTH-003",
+		Message: "로그인을 해주세요.",
+	})
+
+	sharedError.RegisterDomainErrorResponse(invalidClaims, sharedError.ErrorResponse{
+		Status:  http.StatusUnauthorized,
+		Code:    "AUTH-004",
+		Message: "로그인을 해주세요.",
+	})
+}
 
 type Claims struct {
 	UserID    string `json:"user_id"`
@@ -34,24 +74,65 @@ type Claims struct {
 
 func JWT(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 요청 정보 (로깅용)
+		clientIP := c.ClientIP()
+		method := c.Request.Method
+		path := c.Request.URL.Path
+		userAgent := c.Request.UserAgent()
+
+		// Step 1: 토큰 추출
 		token, err := extractToken(c)
 		if err != nil {
-			c.JSON(401, gin.H{"error": err.Error()})
-			c.Abort()
+			// 에러 발생 지점에서 바로 로깅
+			slog.Warn("JWT 토큰 추출 실패",
+				"step", "extract_token",
+				"error", err.Error(),
+				"client_ip", clientIP,
+				"method", method,
+				"path", path,
+				"user_agent", userAgent,
+			)
+			handleJWTError(c, err)
 			return
 		}
 
+		// Step 2: 토큰 검증
 		claims, err := ValidateToken(token, cfg.JWT.Secret)
 		if err != nil {
-			c.JSON(401, gin.H{"error": err.Error()})
-			c.Abort()
+			// 에러 발생 지점에서 바로 로깅
+			slog.Warn("JWT 토큰 검증 실패",
+				"step", "validate_token",
+				"error", err.Error(),
+				"client_ip", clientIP,
+				"method", method,
+				"path", path,
+				"user_agent", userAgent,
+			)
+			handleJWTError(c, err)
 			return
 		}
 
+		// 인증 성공 - Context에 사용자 정보 저장
 		c.Set(UserIDKey, claims.UserID)
 		c.Set(UserEmailKey, claims.Email)
 		c.Next()
 	}
+}
+
+// handleJWTError handles JWT errors using the standardized error response format
+// Note: Logging is done at the point of error detection in JWT() function
+func handleJWTError(c *gin.Context, err error) {
+	if resp, ok := sharedError.ResolveDomainError(err); ok {
+		c.JSON(resp.Status, resp)
+	} else {
+		// 예상치 못한 에러 → Fallback 응답
+		c.JSON(http.StatusUnauthorized, sharedError.ErrorResponse{
+			Status:  http.StatusUnauthorized,
+			Code:    "AUTH-999",
+			Message: "인증에 실패했습니다.",
+		})
+	}
+	c.Abort()
 }
 
 func GenerateToken(userID, email string, cfg *config.Config) (string, error) {
