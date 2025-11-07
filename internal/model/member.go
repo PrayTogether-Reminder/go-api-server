@@ -3,8 +3,8 @@ package model
 // Member represents a user in the system
 // Oracle sequence MEMBER_SEQ is used for ID generation
 type Member struct {
-	// Primary key with Oracle sequence
-	ID int64 `gorm:"column:id;primaryKey;default:MEMBER_SEQ.NEXTVAL"`
+	// Primary key - Oracle IDENTITY (auto-increment)
+	ID int64 `gorm:"column:id;primaryKey;autoIncrement"`
 
 	// Core fields
 	Email    string `gorm:"column:email;type:VARCHAR2(255);not null;uniqueIndex:idx_member_email"` // 이메일 (unique)

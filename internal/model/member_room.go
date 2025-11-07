@@ -7,7 +7,7 @@ import (
 // MemberRoom represents the many-to-many relationship between Member and Room
 // This is the join table that also contains additional relationship data
 type MemberRoom struct {
-	ID int64 `gorm:"primaryKey;default:MEMBER_ROOM_SEQ.NEXTVAL"`
+	ID int64 `gorm:"column:id;primaryKey;autoIncrement"`
 
 	MemberID int64 `gorm:"column:member_id;not null;uniqueIndex:uk_member_room_member_id_room_id"`
 	RoomID   int64 `gorm:"column:room_id;not null;uniqueIndex:uk_member_room_member_id_room_id"`

@@ -1,10 +1,8 @@
 package database
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
@@ -42,15 +40,10 @@ func Migrate(db *gorm.DB, cfg *config.Config) error {
 		}
 	}
 
-	// Step 2: Create tables with IsAutoMigrate
+	// Step 2: Create tables with IDENTITY columns
 	slog.Info("📦 새 테이블 생성 중...")
 	if err := runAutoMigrate(db); err != nil {
 		return fmt.Errorf("테이블 생성 실패: %w", err)
-	}
-
-	// Step 3: Create sequences (Oracle specific)
-	if err := createOracleSequences(db); err != nil {
-		return fmt.Errorf("시퀀스 생성 실패: %w", err)
 	}
 
 	slog.Info("✅ 마이그레이션 완료!")
@@ -91,36 +84,4 @@ func getAllModelsInReverseOrder() []interface{} {
 		&model.Room{},
 		&model.Member{},
 	}
-}
-
-// createOracleSequences creates Oracle sequences for auto-increment IDs
-func createOracleSequences(db *gorm.DB) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	sequences := []struct {
-		name       string
-		startValue int64
-	}{
-		{"MEMBER_SEQ", 1},
-		{"ROOM_SEQ", 1},
-		{"MEMBER_ROOM_SEQ", 1},
-	}
-
-	for _, seq := range sequences {
-		// Drop sequence if exists
-		dropSQL := fmt.Sprintf("BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE %s'; EXCEPTION WHEN OTHERS THEN NULL; END;", seq.name)
-		if err := db.WithContext(ctx).Exec(dropSQL).Error; err != nil {
-			slog.Debug("시퀀스 삭제 시도", "sequence", seq.name, "error", err)
-		}
-
-		// Create sequence
-		createSQL := fmt.Sprintf("CREATE SEQUENCE %s START WITH %d INCREMENT BY 1 NOCACHE", seq.name, seq.startValue)
-		if err := db.WithContext(ctx).Exec(createSQL).Error; err != nil {
-			return fmt.Errorf("시퀀스 %s 생성 실패: %w", seq.name, err)
-		}
-		slog.Debug("시퀀스 생성됨", "sequence", seq.name)
-	}
-
-	return nil
 }

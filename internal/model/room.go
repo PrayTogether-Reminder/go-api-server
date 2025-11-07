@@ -8,9 +8,9 @@ import (
 )
 
 // Room represents a prayer room where users can share prayers
-// Oracle sequence ROOM_SEQ is used for ID generation
+// Oracle IDENTITY is used for ID generation
 type Room struct {
-	ID int64 `gorm:"primaryKey;default:ROOM_SEQ.NEXTVAL"`
+	ID int64 `gorm:"column:id;primaryKey;autoIncrement"`
 
 	Name        string `gorm:"column:name;type:VARCHAR2(100);not null"`        // 방 이름
 	Description string `gorm:"column:description;type:VARCHAR2(500);not null"` // 방 설명
