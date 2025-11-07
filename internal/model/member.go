@@ -1,17 +1,10 @@
 package model
 
-import (
-	"regexp"
-)
-
-// emailRegex for email validation
-var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
-
 // Member represents a user in the system
 // Oracle sequence MEMBER_SEQ is used for ID generation
 type Member struct {
 	// Primary key with Oracle sequence
-	ID int64 `gorm:"primaryKey;default:MEMBER_SEQ.NEXTVAL"`
+	ID int64 `gorm:"column:id;primaryKey;default:MEMBER_SEQ.NEXTVAL"`
 
 	// Core fields
 	Email    string `gorm:"column:email;type:VARCHAR2(255);not null;uniqueIndex:idx_member_email"` // 이메일 (unique)

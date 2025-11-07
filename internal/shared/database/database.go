@@ -65,6 +65,11 @@ func New(cfg *config.Config) (*DB, error) {
 		"conn_max_idle_time", cfg.Database.ConnMaxIdleTime.String(),
 	)
 
+	// Run migration based on configuration
+	if err := Migrate(db, cfg); err != nil {
+		return nil, fmt.Errorf("마이그레이션 실패: %w", err)
+	}
+
 	return &DB{DB: db}, nil
 }
 
@@ -113,15 +118,6 @@ func (db *DB) HealthCheck(ctx context.Context) error {
 		return fmt.Errorf("데이터베이스 상태 확인 실패: %w", err)
 	}
 
-	return nil
-}
-
-// AutoMigrate runs auto migration for given models
-func (db *DB) AutoMigrate(models ...interface{}) error {
-	if err := db.DB.AutoMigrate(models...); err != nil {
-		return fmt.Errorf("자동 마이그레이션 실패: %w", err)
-	}
-	slog.Info("데이터베이스 마이그레이션 완료")
 	return nil
 }
 
