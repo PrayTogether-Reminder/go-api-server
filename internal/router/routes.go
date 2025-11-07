@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/meta"
@@ -18,14 +19,14 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	memberRepository := member.NewMemberRepository()
 
 	// service
-	memberService := member.NewMemberService(db.DB, memberRepository)
+	authService := auth.NewAuthService(db.DB, memberRepository)
 
 	// handler
-	memberHandler := member.NewMemberHandler(memberService)
+	authHandler := auth.NewAuthHandler(authService)
 
 	// API v1 routes
 	authV1 := router.Group("/api/v1/auth")
 	{
-		authV1.POST("/signup", memberHandler.Signup)
+		authV1.POST("/signup", authHandler.Signup)
 	}
 }
