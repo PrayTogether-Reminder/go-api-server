@@ -7,19 +7,13 @@ import (
 	"gorm.io/gorm"
 )
 
-type MemberRepository interface {
-	IsExist(ctx context.Context, db *gorm.DB, email string) (bool, error)
-	Create(ctx context.Context, db *gorm.DB, member *model.Member) error
-	FindByEmail(ctx context.Context, db *gorm.DB, email string) (*model.Member, error)
+type MemberRepository struct{}
+
+func NewMemberRepository() *MemberRepository {
+	return &MemberRepository{}
 }
 
-type memberRepository struct{}
-
-func NewMemberRepository() MemberRepository {
-	return &memberRepository{}
-}
-
-func (m *memberRepository) IsExist(ctx context.Context, db *gorm.DB, email string) (bool, error) {
+func (m *MemberRepository) IsExist(ctx context.Context, db *gorm.DB, email string) (bool, error) {
 	var count int64
 	err := db.Model(&model.Member{}).
 		Where("email = ?", email).
@@ -32,11 +26,11 @@ func (m *memberRepository) IsExist(ctx context.Context, db *gorm.DB, email strin
 	return count > 0, nil
 }
 
-func (m *memberRepository) Create(ctx context.Context, db *gorm.DB, member *model.Member) error {
+func (m *MemberRepository) Create(ctx context.Context, db *gorm.DB, member *model.Member) error {
 	return db.Create(member).Error
 }
 
-func (m *memberRepository) FindByEmail(ctx context.Context, db *gorm.DB, email string) (*model.Member, error) {
+func (m *MemberRepository) FindByEmail(ctx context.Context, db *gorm.DB, email string) (*model.Member, error) {
 	var member model.Member
 	err := db.Where("email = ?", email).First(&member).Error
 	if err != nil {

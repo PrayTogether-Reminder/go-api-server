@@ -15,27 +15,22 @@ import (
 	"gorm.io/gorm"
 )
 
-type AuthService interface {
-	Login(ctx context.Context, request *LoginRequest) (*LoginResponse, error)
-	Signup(ctx context.Context, request *SignupRequest) error
-}
-
-type authService struct {
+type AuthService struct {
 	db               *gorm.DB
-	memberRepository member.MemberRepository
+	memberRepository *member.MemberRepository
 	tokenManager     token.Manager
 }
 
-func NewAuthService(db *gorm.DB, memberRepository member.MemberRepository, tokenManager token.Manager) AuthService {
-	return &authService{
+func NewAuthService(db *gorm.DB, memberRepository *member.MemberRepository, tokenManager token.Manager) *AuthService {
+	return &AuthService{
 		db:               db,
 		memberRepository: memberRepository,
 		tokenManager:     tokenManager,
 	}
 }
 
-// todo: service/repository New 반환시 *struct 로 반환, Not interface / ctx 제거?
-func (a *authService) Login(ctx context.Context, request *LoginRequest) (*LoginResponse, error) {
+// todo: ctx 제거?
+func (a *AuthService) Login(ctx context.Context, request *LoginRequest) (*LoginResponse, error) {
 	log := logger.FromContext(ctx)
 
 	// 1. Find member by email
@@ -77,7 +72,7 @@ func (a *authService) Login(ctx context.Context, request *LoginRequest) (*LoginR
 	}, nil
 }
 
-func (a *authService) Signup(ctx context.Context, request *SignupRequest) error {
+func (a *AuthService) Signup(ctx context.Context, request *SignupRequest) error {
 	log := logger.FromContext(ctx)
 	return database.WithTransaction(ctx, a.db, func(tx *gorm.DB) error {
 		exists, err := a.memberRepository.IsExist(ctx, tx, request.Email)
