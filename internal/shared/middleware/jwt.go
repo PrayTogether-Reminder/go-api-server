@@ -5,13 +5,12 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/token"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 const (
@@ -41,38 +40,32 @@ var (
 func init() {
 	sharedError.RegisterDomainErrorResponse(missingToken, sharedError.ErrorResponse{
 		Status:  http.StatusUnauthorized,
-		Code:    "AUTH-001",
+		Code:    "AUTH-000",
 		Message: "로그인을 해주세요.",
 	})
 
 	sharedError.RegisterDomainErrorResponse(invalidToken, sharedError.ErrorResponse{
 		Status:  http.StatusUnauthorized,
-		Code:    "AUTH-002",
+		Code:    "AUTH-000",
 		Message: "로그인을 해주세요.",
 	})
 
 	sharedError.RegisterDomainErrorResponse(expiredToken, sharedError.ErrorResponse{
 		Status:  http.StatusUnauthorized,
-		Code:    "AUTH-003",
+		Code:    "AUTH-000",
 		Message: "로그인을 해주세요.",
 	})
 
 	sharedError.RegisterDomainErrorResponse(invalidClaims, sharedError.ErrorResponse{
 		Status:  http.StatusUnauthorized,
-		Code:    "AUTH-004",
+		Code:    "AUTH-000",
 		Message: "로그인을 해주세요.",
 	})
 }
 
-type Claims struct {
-	UserID    string `json:"user_id"`
-	Email     string `json:"email"`
-	ExpiresAt int64  `json:"exp"`
-	IssuedAt  int64  `json:"iat"`
-	jwt.RegisteredClaims
-}
-
 func JWT(cfg *config.Config) gin.HandlerFunc {
+	tokenManager := token.NewJWTManager(cfg)
+
 	return func(c *gin.Context) {
 		// 요청 정보 (로깅용)
 		clientIP := c.ClientIP()
@@ -97,7 +90,7 @@ func JWT(cfg *config.Config) gin.HandlerFunc {
 		}
 
 		// Step 2: 토큰 검증
-		claims, err := ValidateToken(token, cfg.JWT.Secret)
+		claims, err := tokenManager.ValidateToken(token)
 		if err != nil {
 			// 에러 발생 지점에서 바로 로깅
 			slog.Warn("JWT 토큰 검증 실패",
@@ -108,7 +101,7 @@ func JWT(cfg *config.Config) gin.HandlerFunc {
 				"path", path,
 				"user_agent", userAgent,
 			)
-			handleJWTError(c, err)
+			handleJWTError(c, mapTokenError(err))
 			return
 		}
 
@@ -133,67 +126,6 @@ func handleJWTError(c *gin.Context, err error) {
 		})
 	}
 	c.Abort()
-}
-
-func GenerateToken(userID, email string, cfg *config.Config) (string, error) {
-	now := time.Now()
-	expiresAt := now.Add(cfg.JWT.Expiry)
-
-	claims := Claims{
-		UserID:    userID,
-		Email:     email,
-		ExpiresAt: expiresAt.Unix(),
-		IssuedAt:  now.Unix(),
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
-			IssuedAt:  jwt.NewNumericDate(now),
-			Issuer:    cfg.App.Name,
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(cfg.JWT.Secret))
-}
-
-func GenerateRefreshToken(userID string, cfg *config.Config) (string, error) {
-	now := time.Now()
-	expiresAt := now.Add(cfg.JWT.RefreshExpiry)
-
-	claims := jwt.RegisteredClaims{
-		Subject:   userID,
-		ExpiresAt: jwt.NewNumericDate(expiresAt),
-		IssuedAt:  jwt.NewNumericDate(now),
-		Issuer:    cfg.App.Name,
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(cfg.JWT.Secret))
-}
-
-func ValidateToken(tokenString, secret string) (*Claims, error) {
-	parser := jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name}))
-
-	token, err := parser.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(secret), nil
-	})
-
-	if err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) {
-			return nil, ErrExpiredToken
-		}
-		return nil, ErrInvalidToken
-	}
-
-	claims, ok := token.Claims.(*Claims)
-	if !ok {
-		return nil, ErrInvalidClaims
-	}
-
-	if !token.Valid {
-		return nil, ErrInvalidToken
-	}
-
-	return claims, nil
 }
 
 func extractToken(c *gin.Context) (string, error) {
@@ -228,4 +160,15 @@ func GetUserEmail(c *gin.Context) (string, bool) {
 
 	e, ok := email.(string)
 	return e, ok
+}
+
+func mapTokenError(err error) error {
+	switch {
+	case errors.Is(err, token.ErrExpiredToken):
+		return ErrExpiredToken
+	case errors.Is(err, token.ErrInvalidClaims):
+		return ErrInvalidClaims
+	default:
+		return ErrInvalidToken
+	}
 }

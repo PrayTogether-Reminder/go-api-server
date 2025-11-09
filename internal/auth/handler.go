@@ -16,6 +16,28 @@ func NewAuthHandler(authService AuthService) *AuthHandler {
 	}
 }
 
+func (a *AuthHandler) Login(c *gin.Context) {
+	var request LoginRequest
+
+	// Parse and validate JSON request
+	if !handler.BindJSON(c, &request) {
+		return
+	}
+
+	response, err := a.authService.Login(c.Request.Context(), &request)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			handler.RespondError(c, err, resp)
+			return
+		}
+
+		handler.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(200, response)
+}
+
 func (a *AuthHandler) Signup(c *gin.Context) {
 	var request SignupRequest
 

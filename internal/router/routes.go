@@ -6,6 +6,7 @@ import (
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/meta"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,8 +19,11 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	// repository
 	memberRepository := member.NewMemberRepository()
 
+	// shared services
+	tokenManager := token.NewJWTManager(cfg)
+
 	// service
-	authService := auth.NewAuthService(db.DB, memberRepository)
+	authService := auth.NewAuthService(db.DB, memberRepository, tokenManager)
 
 	// handler
 	authHandler := auth.NewAuthHandler(authService)
@@ -28,5 +32,6 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	authV1 := router.Group("/api/v1/auth")
 	{
 		authV1.POST("/signup", authHandler.Signup)
+		authV1.POST("/login", authHandler.Login)
 	}
 }

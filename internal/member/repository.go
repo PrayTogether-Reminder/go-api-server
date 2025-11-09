@@ -10,6 +10,7 @@ import (
 type MemberRepository interface {
 	IsExist(ctx context.Context, db *gorm.DB, email string) (bool, error)
 	Create(ctx context.Context, db *gorm.DB, member *model.Member) error
+	FindByEmail(ctx context.Context, db *gorm.DB, email string) (*model.Member, error)
 }
 
 type memberRepository struct{}
@@ -33,4 +34,13 @@ func (m *memberRepository) IsExist(ctx context.Context, db *gorm.DB, email strin
 
 func (m *memberRepository) Create(ctx context.Context, db *gorm.DB, member *model.Member) error {
 	return db.Create(member).Error
+}
+
+func (m *memberRepository) FindByEmail(ctx context.Context, db *gorm.DB, email string) (*model.Member, error) {
+	var member model.Member
+	err := db.Where("email = ?", email).First(&member).Error
+	if err != nil {
+		return nil, err
+	}
+	return &member, nil
 }

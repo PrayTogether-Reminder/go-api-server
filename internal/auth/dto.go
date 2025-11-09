@@ -6,3 +6,13 @@ type SignupRequest struct {
 	PhoneNumber string `json:"phoneNumber" binding:"required,phone"`
 	Password    string `json:"password" binding:"required,min=8,max=15"`
 }
+
+type LoginRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8,max=15"`
+}
+
+type LoginResponse struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}
