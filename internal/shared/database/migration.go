@@ -28,15 +28,25 @@ func Migrate(db *gorm.DB, cfg *config.Config) error {
 		return fmt.Errorf("🚨 PRODUCTION 환경에서는 DB_AUTO_MIGRATE=true를 사용할 수 없습니다! 데이터 손실 방지를 위해 차단됨")
 	}
 
-	// Get all models in dependency order (중요: FK 관계 역순으로 삭제)
-	models := getAllModelsInReverseOrder()
-
-	// Step 1: Drop all tables
+	// Step 1: Drop all tables (Oracle)
 	slog.Info("🗑️  기존 테이블 삭제 중...")
-	for _, model := range models {
-		if err := db.Migrator().DropTable(model); err != nil {
-			// Ignore "table does not exist" errors
-			slog.Debug("테이블 삭제 시도", "model", fmt.Sprintf("%T", model), "error", err)
+
+	// Order matters: drop in reverse dependency order (FK constraints)
+	tableNames := []string{"member_room", "room", "member"}
+
+	for _, tableName := range tableNames {
+		// Check if table exists (Oracle)
+		var count int64
+		db.Raw("SELECT COUNT(*) FROM USER_TABLES WHERE UPPER(TABLE_NAME) = UPPER(?)", tableName).Scan(&count)
+
+		if count > 0 {
+			// Oracle: DROP TABLE with CASCADE CONSTRAINTS
+			dropSQL := fmt.Sprintf("DROP TABLE %s CASCADE CONSTRAINTS", tableName)
+			if err := db.Exec(dropSQL).Error; err != nil {
+				slog.Debug("테이블 삭제 실패", "table", tableName, "error", err)
+			} else {
+				slog.Debug("테이블 삭제 성공", "table", tableName)
+			}
 		}
 	}
 
@@ -72,16 +82,4 @@ func runAutoMigrate(db *gorm.DB) error {
 	}
 
 	return nil
-}
-
-// getAllModelsInReverseOrder returns all models in reverse dependency order
-// Used for dropping tables (FK constraints require reverse order)
-func getAllModelsInReverseOrder() []interface{} {
-	return []interface{}{
-		&model.MemberRoom{},
-
-		// Drop independent tables last
-		&model.Room{},
-		&model.Member{},
-	}
 }
