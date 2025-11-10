@@ -32,7 +32,7 @@ func Migrate(db *gorm.DB, cfg *config.Config) error {
 	slog.Info("🗑️  기존 테이블 삭제 중...")
 
 	// Order matters: drop in reverse dependency order (FK constraints)
-	tableNames := []string{"member_room", "room", "member"}
+	tableNames := []string{"member"}
 
 	for _, tableName := range tableNames {
 		// Check if table exists (Oracle)
@@ -68,10 +68,6 @@ func runAutoMigrate(db *gorm.DB) error {
 	models := []interface{}{
 		// Independent tables (no foreign keys)
 		&model.Member{},
-		&model.Room{},
-
-		// Join tables (have foreign keys)
-		&model.MemberRoom{},
 	}
 
 	for _, m := range models {
