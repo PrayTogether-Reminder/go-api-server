@@ -38,3 +38,12 @@ func (m *MemberRepository) FindByEmail(ctx context.Context, db *gorm.DB, email s
 	}
 	return &member, nil
 }
+
+func (m *MemberRepository) FindByID(ctx context.Context, db *gorm.DB, ID uint32) (*model.Member, error) {
+	var member model.Member
+	err := db.Where("id = ?", ID).First(&member).Error
+	if err != nil {
+		return nil, err
+	}
+	return &member, nil
+}
