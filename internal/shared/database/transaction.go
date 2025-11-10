@@ -9,7 +9,8 @@ import (
 
 // WithTransaction executes the provided fn within a transaction while propagating context.
 // The transaction DB instance passed to fn already includes the context, so repository methods
-// should NOT call WithContext again.
+// can use it directly. Calling WithContext again is optional (and safe) if you want to keep the
+// repository signature uniform for both transactional and non-transactional DB handles.
 //
 // Usage:
 //

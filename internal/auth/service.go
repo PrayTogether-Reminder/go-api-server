@@ -28,7 +28,6 @@ func NewAuthService(db *gorm.DB, memberRepository *member.MemberRepository, toke
 	}
 }
 
-// todo: ctx 제거?
 func (a *AuthService) Login(ctx context.Context, request *LoginRequest) (*LoginResponse, error) {
 	log := logger.FromContext(ctx)
 
