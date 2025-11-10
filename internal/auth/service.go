@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
-
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
@@ -13,6 +11,7 @@ import (
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/token"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"strconv"
 )
 
 type AuthService struct {
@@ -51,14 +50,14 @@ func (a *AuthService) Login(ctx context.Context, request *LoginRequest) (*LoginR
 	}
 
 	// 3. Generate JWT tokens
-	userID := strconv.FormatInt(member.ID, 10)
-	accessToken, err := a.tokenManager.GenerateAccessToken(userID, member.Email)
+	memberID := strconv.FormatUint(uint64(member.ID), 10)
+	accessToken, err := a.tokenManager.GenerateAccessToken(memberID, member.Email)
 	if err != nil {
 		log.Error("access token 생성 실패", "error", err)
 		return nil, fmt.Errorf("generate access token: %w", err)
 	}
 
-	refreshToken, err := a.tokenManager.GenerateRefreshToken(userID, member.Email)
+	refreshToken, err := a.tokenManager.GenerateRefreshToken(memberID, member.Email)
 	if err != nil {
 		log.Error("refresh token 생성 실패", "error", err)
 		return nil, fmt.Errorf("generate refresh token: %w", err)
@@ -91,7 +90,7 @@ func (a *AuthService) Signup(ctx context.Context, request *SignupRequest) error 
 			return fmt.Errorf("hash password: %w", err)
 		}
 
-		member := model.NewMember(request.Name, request.Email, string(hashedPassword))
+		member := model.NewMember(request.Name, request.Email, request.PhoneNumber, string(hashedPassword))
 		if err := a.memberRepository.Create(ctx, tx, member); err != nil {
 			log.Error("Failed to create member", "error", err)
 			return fmt.Errorf("create member: %w", err)
