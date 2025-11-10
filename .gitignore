@@ -78,7 +78,7 @@ __debug_bin
 
 # Module download cache
 go.sum.backup
-
+.cache/
 # Claude
 .claude
 .tools
