@@ -20,7 +20,7 @@ const (
 )
 
 type Claims struct {
-	UserID    string `json:"user_id"`
+	MemberID  string `json:"member_id"`
 	Email     string `json:"email"`
 	TokenType string `json:"token_type"`
 	ExpiresAt int64  `json:"exp"`
@@ -29,8 +29,8 @@ type Claims struct {
 }
 
 type Manager interface {
-	GenerateAccessToken(userID, email string) (string, error)
-	GenerateRefreshToken(userID string, email string) (string, error)
+	GenerateAccessToken(memberID string, email string) (string, error)
+	GenerateRefreshToken(memerID string, email string) (string, error)
 	ValidateToken(tokenString string) (*Claims, error)
 }
 
@@ -50,12 +50,12 @@ func NewJWTManager(cfg *config.Config) *JWTManager {
 	}
 }
 
-func (m *JWTManager) GenerateAccessToken(userID, email string) (string, error) {
+func (m *JWTManager) GenerateAccessToken(memberID, email string) (string, error) {
 	now := time.Now()
 	expiresAt := now.Add(m.accessExpiry)
 
 	claims := Claims{
-		UserID:    userID,
+		MemberID:  memberID,
 		Email:     email,
 		ExpiresAt: expiresAt.Unix(),
 		TokenType: ACCESS,
@@ -71,18 +71,18 @@ func (m *JWTManager) GenerateAccessToken(userID, email string) (string, error) {
 	return token.SignedString(m.secret)
 }
 
-func (m *JWTManager) GenerateRefreshToken(userID string, email string) (string, error) {
+func (m *JWTManager) GenerateRefreshToken(memberID string, email string) (string, error) {
 	now := time.Now()
 	expiresAt := now.Add(m.refreshExpiry)
 
 	claims := Claims{
-		UserID:    userID,
+		MemberID:  memberID,
 		Email:     email,
 		TokenType: REFRESH,
 		ExpiresAt: expiresAt.Unix(),
 		IssuedAt:  now.Unix(),
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   userID,
+			Subject:   memberID,
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
 			IssuedAt:  jwt.NewNumericDate(now),
 			Issuer:    m.issuer,
