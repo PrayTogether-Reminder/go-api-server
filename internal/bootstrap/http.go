@@ -1,4 +1,4 @@
-package server
+package bootstrap
 
 import (
 	"context"
@@ -29,9 +29,14 @@ func New(cfg *config.Config, handler http.Handler) *Server {
 	}
 }
 
+// Port returns the server port
+func (s *Server) Port() int {
+	return s.cfg.App.Port
+}
+
 // Start starts the HTTP server
 func (s *Server) Start() error {
-	slog.Info("Starting server",
+	slog.Info("서버 시작 중",
 		"port", s.cfg.App.Port,
 		"env", s.cfg.App.Env,
 		"read_timeout", s.cfg.Server.ReadTimeout,
@@ -47,6 +52,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
-	slog.Info("Shutting down server...")
-	return s.server.Shutdown(ctx)
+	err := s.server.Shutdown(ctx)
+	return err
 }

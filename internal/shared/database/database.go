@@ -3,10 +3,11 @@ package database
 import (
 	"context"
 	"fmt"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"log/slog"
 	"net/url"
 	"time"
+
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 
 	oracle "github.com/godoes/gorm-oracle"
 	"gorm.io/gorm"
@@ -24,7 +25,7 @@ func New(cfg *config.Config) (*DB, error) {
 	gormConfig := &gorm.Config{
 		Logger:                 newLogger(cfg),
 		PrepareStmt:            true, // Prepared statements for better performance
-		SkipDefaultTransaction: true, // Skip default transaction for better performance
+		SkipDefaultTransaction: true, // Skip default transaction for better performance, pass tx 1.BEGIN 2.INSERT(QUERY) 3.COMMIT (3 network)
 		NowFunc: func() time.Time {
 			return time.Now().UTC() // created_at, updated_at 등에 UTC 사용
 		},
@@ -32,36 +33,42 @@ func New(cfg *config.Config) (*DB, error) {
 
 	db, err := gorm.Open(oracle.Open(dsn), gormConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("데이터베이스 연결 실패: %w", err)
 	}
 
 	// Get underlying SQL database
 	sqlDB, err := db.DB()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get database instance: %w", err)
+		return nil, fmt.Errorf("데이터베이스 인스턴스 가져오기 실패: %w", err)
 	}
 
 	// Configure connection pool
 	sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConns)
 	sqlDB.SetMaxOpenConns(cfg.Database.MaxOpenConns)
 	sqlDB.SetConnMaxLifetime(cfg.Database.ConnMaxLifetime)
+	sqlDB.SetConnMaxIdleTime(cfg.Database.ConnMaxIdleTime)
 
 	// Test connection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := sqlDB.PingContext(ctx); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		return nil, fmt.Errorf("데이터베이스 핑 실패: %w", err)
 	}
 
-	// 연결 설정 정보 로깅 (개발자가 확인 가능하도록)
-	slog.Info("Database connected successfully",
+	slog.Info("데이터베이스 연결 성공",
 		"host", cfg.Database.Host,
 		"service", cfg.Database.Service,
 		"max_idle_conns", cfg.Database.MaxIdleConns,
 		"max_open_conns", cfg.Database.MaxOpenConns,
 		"conn_max_lifetime", cfg.Database.ConnMaxLifetime.String(),
+		"conn_max_idle_time", cfg.Database.ConnMaxIdleTime.String(),
 	)
+
+	// Run migration based on configuration
+	if err := Migrate(db, cfg); err != nil {
+		return nil, fmt.Errorf("마이그레이션 실패: %w", err)
+	}
 
 	return &DB{DB: db}, nil
 }
@@ -93,10 +100,10 @@ func (db *DB) Close() error {
 	}
 
 	if err := sqlDB.Close(); err != nil {
-		return fmt.Errorf("failed to close database: %w", err)
+		return fmt.Errorf("데이터베이스 종료 실패: %w", err)
 	}
 
-	slog.Info("Database connection closed")
+	slog.Info("데이터베이스 연결이 종료되었습니다")
 	return nil
 }
 
@@ -104,28 +111,14 @@ func (db *DB) Close() error {
 func (db *DB) HealthCheck(ctx context.Context) error {
 	sqlDB, err := db.DB.DB()
 	if err != nil {
-		return fmt.Errorf("failed to get database instance: %w", err)
+		return fmt.Errorf("데이터베이스 인스턴스 가져오기 실패: %w", err)
 	}
 
 	if err := sqlDB.PingContext(ctx); err != nil {
-		return fmt.Errorf("database health check failed: %w", err)
+		return fmt.Errorf("데이터베이스 상태 확인 실패: %w", err)
 	}
 
 	return nil
-}
-
-// AutoMigrate runs auto migration for given models
-func (db *DB) AutoMigrate(models ...interface{}) error {
-	if err := db.DB.AutoMigrate(models...); err != nil {
-		return fmt.Errorf("auto migration failed: %w", err)
-	}
-	slog.Info("Database migration completed successfully")
-	return nil
-}
-
-// Transaction executes a function within a database transaction
-func (db *DB) Transaction(fn func(*gorm.DB) error) error {
-	return db.DB.Transaction(fn)
 }
 
 // WithContext returns a new DB with context
