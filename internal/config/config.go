@@ -17,7 +17,6 @@ type Config struct {
 	Database DatabaseConfig
 	JWT      JWTConfig
 	CORS     CORSConfig
-	Log      LogConfig
 	Server   ServerConfig
 }
 
@@ -52,11 +51,6 @@ type CORSConfig struct {
 	AllowedHeaders   []string
 	AllowCredentials bool
 	MaxAge           int
-}
-
-type LogConfig struct {
-	Level  string
-	Format string
 }
 
 type ServerConfig struct {
@@ -100,10 +94,6 @@ func Load(env string) (*Config, error) {
 			AllowedHeaders:   getEnvAsSlice("CORS_ALLOWED_HEADERS", []string{"*"}),
 			AllowCredentials: getEnvAsBool("CORS_ALLOW_CREDENTIALS", true),
 			MaxAge:           getEnvAsInt("CORS_MAX_AGE", 86400),
-		},
-		Log: LogConfig{ // todo: logger 가 처리를 하고 있어서 없어도 될 지도
-			Level:  getEnv("LOG_LEVEL", "info"),  // debug , warn, error
-			Format: getEnv("LOG_FORMAT", "json"), // text
 		},
 		Server: ServerConfig{
 			ReadTimeout:     getEnvAsDuration("SERVER_READ_TIMEOUT", "15s"),
@@ -166,25 +156,6 @@ func (c *Config) Validate() error {
 	}
 	if len(c.JWT.Secret) < 32 {
 		errors = append(errors, "JWT Secret Key는 32자 이상이어야 합니다")
-	}
-
-	// Log validation
-	validLogLevels := map[string]bool{
-		"debug": true,
-		"info":  true,
-		"warn":  true,
-		"error": true,
-	}
-	if !validLogLevels[c.Log.Level] {
-		errors = append(errors, fmt.Sprintf("유효하지 않은 로그 레벨: %s", c.Log.Level))
-	}
-
-	validLogFormats := map[string]bool{
-		"json": true,
-		"text": true,
-	}
-	if !validLogFormats[c.Log.Format] {
-		errors = append(errors, fmt.Sprintf("유효하지 않은 로그 형식: %s", c.Log.Format))
 	}
 
 	if len(errors) > 0 {
