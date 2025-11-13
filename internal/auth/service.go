@@ -49,12 +49,12 @@ func (a *AuthService) Login(ctx context.Context, request *LoginRequest) (*LoginR
 	memberID := strconv.FormatUint(uint64(member.ID), 10)
 	accessToken, err := a.tokenManager.GenerateAccessToken(memberID, member.Email)
 	if err != nil {
-		return nil, fmt.Errorf("AccessToken 생성 실패: memberID=%d %w", memberID, err)
+		return nil, fmt.Errorf("AccessToken 생성 실패: memberID=%s %w", memberID, err)
 	}
 
 	refreshToken, err := a.tokenManager.GenerateRefreshToken(memberID, member.Email)
 	if err != nil {
-		return nil, fmt.Errorf("RefreshToken 생성 실패: memberID=%d %w", memberID, err)
+		return nil, fmt.Errorf("RefreshToken 생성 실패: memberID=%s %w", memberID, err)
 	}
 
 	log.Info("로그인 성공", "email", logger.MaskEmail(request.Email))
