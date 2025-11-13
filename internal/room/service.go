@@ -36,7 +36,7 @@ func (s *RoomService) FetchInfiniteScroll(ctx context.Context, memberID uint32, 
 	err := database.WithTransaction(ctx, s.db, func(tx *gorm.DB) error {
 		roomInfos, err := s.fetchRoomInfosByMember(ctx, tx, memberID, request)
 		if err != nil {
-			return fmt.Errorf("방 목록 조회 실패: %w", memberID, err)
+			return fmt.Errorf("방 목록 조회 실패: %w", err)
 		}
 
 		// Empty roomInfos case
@@ -91,7 +91,7 @@ func (s *RoomService) fetchRoomInfosByMember(ctx context.Context, tx *gorm.DB, m
 	if request.After == DefaultAfter {
 		roomInfos, err := s.roomRepository.FindRoomInfosByMemberIDInitial(ctx, tx, memberID, InfiniteScrollPageSize)
 		if err != nil {
-			return nil, fmt.Errorf("회원 방 조회 도중 오류 발생: %w", memberID, err)
+			return nil, fmt.Errorf("회원 방 조회 도중 오류 발생: %w", err)
 		}
 		return roomInfos, nil
 	}
@@ -99,13 +99,13 @@ func (s *RoomService) fetchRoomInfosByMember(ctx context.Context, tx *gorm.DB, m
 	// Parse cursor (after) as timestamp
 	afterTime, err := time.Parse(time.RFC3339, request.After)
 	if err != nil {
-		return nil, fmt.Errorf("회원 방 조회 도중 오류 발생: %w", memberID, sharedError.ErrInvalidTimeFormat)
+		return nil, fmt.Errorf("회원 방 조회 도중 오류 발생: %w", sharedError.ErrInvalidTimeFormat)
 	}
 
 	// Subsequent requests (after cursor)
 	roomInfos, err := s.roomRepository.FindRoomInfosByMemberIDAfter(ctx, tx, memberID, afterTime, InfiniteScrollPageSize)
 	if err != nil {
-		return nil, fmt.Errorf("회원 방 조회 도중 오류 발생: %w", memberID, err)
+		return nil, fmt.Errorf("회원 방 조회 도중 오류 발생: %w", err)
 	}
 	return roomInfos, nil
 }
