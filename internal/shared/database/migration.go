@@ -67,6 +67,9 @@ func runAutoMigrate(db *gorm.DB) error {
 	// 2. FK 참조하는 테이블은 나중에
 	models := []interface{}{
 		// Independent tables (no foreign keys)
+		&model.Room{},
+		&model.MemberRoom{},
+
 		&model.Member{},
 	}
 
