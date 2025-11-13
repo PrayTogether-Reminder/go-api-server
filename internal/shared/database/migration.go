@@ -32,7 +32,8 @@ func Migrate(db *gorm.DB, cfg *config.Config) error {
 	slog.Info("🗑️  기존 테이블 삭제 중...")
 
 	// Order matters: drop in reverse dependency order (FK constraints)
-	tableNames := []string{"member"}
+	// member_room → room, member (FK 참조하는 테이블 먼저)
+	tableNames := []string{"member_room", "room", "member"}
 
 	for _, tableName := range tableNames {
 		// Check if table exists (Oracle)
@@ -63,14 +64,15 @@ func Migrate(db *gorm.DB, cfg *config.Config) error {
 // runAutoMigrate creates tables based on model definitions
 func runAutoMigrate(db *gorm.DB) error {
 	// 중요: 의존성 순서대로 생성 (FK 참조 순서)
-	// 1. 독립 테이블 먼저
+	// 1. 독립 테이블 먼저 (no FK)
 	// 2. FK 참조하는 테이블은 나중에
 	models := []interface{}{
 		// Independent tables (no foreign keys)
 		&model.Room{},
-		&model.MemberRoom{},
-
 		&model.Member{},
+
+		// Dependent tables (with foreign keys)
+		&model.MemberRoom{}, // FK: room_id, member_id
 	}
 
 	for _, m := range models {
