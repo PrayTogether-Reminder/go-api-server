@@ -39,10 +39,6 @@ func NewTestConfig() *config.Config {
 			AllowCredentials: true,
 			MaxAge:           86400,
 		},
-		Log: config.LogConfig{
-			Level:  "info",
-			Format: "json",
-		},
 		Server: config.ServerConfig{
 			ReadTimeout:     15 * time.Second,
 			WriteTimeout:    15 * time.Second,
