@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/validator"
 	"github.com/gin-gonic/gin"
 )
@@ -21,11 +22,30 @@ func SetupTestRouter() *gin.Engine {
 	return gin.New()
 }
 
+// SetupAuthenticatedRouter creates a test router with memberID set in context
+// This simulates the RESULT of JWT middleware (memberID in context) without actual token validation.
+// Use this for testing authenticated endpoints without dealing with actual JWT tokens.
+//
+// In production: Request → JWT Middleware (validate token) → set memberID → Handler
+// In test: Request → Mock Middleware (directly set memberID) → Handler
+func SetupAuthenticatedRouter(memberID uint32) *gin.Engine {
+	router := SetupTestRouter()
+
+	// Simulate the result of JWT middleware: memberID in context
+	router.Use(func(c *gin.Context) {
+		c.Set(sharedHttp.MemberIDKey, memberID)
+		c.Next()
+	})
+
+	return router
+}
+
 // MakeRequest is a helper to make HTTP requests in tests
 type TestRequest struct {
-	Method string
-	URL    string
-	Body   interface{}
+	Method      string
+	URL         string
+	Body        interface{}
+	AccessToken string // Optional JWT token for authenticated requests
 }
 
 // ExecuteRequest executes a test HTTP request and returns the response
@@ -43,6 +63,11 @@ func ExecuteRequest(t *testing.T, router *gin.Engine, req TestRequest) *httptest
 
 	httpReq := httptest.NewRequest(req.Method, req.URL, bodyReader)
 	httpReq.Header.Set("Content-Type", "application/json")
+
+	// Add JWT token if provided
+	if req.AccessToken != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+req.AccessToken)
+	}
 
 	recorder := httptest.NewRecorder()
 	router.ServeHTTP(recorder, httpReq)
