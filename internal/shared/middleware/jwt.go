@@ -1,14 +1,15 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
-	sharedContext "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/context"
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/token"
 
 	"github.com/gin-gonic/gin"
@@ -105,8 +106,13 @@ func JWT(cfg *config.Config) gin.HandlerFunc {
 		}
 
 		// 인증 성공 - Context에 사용자 정보 저장
-		c.Set(sharedContext.MemberIDKey, claims.MemberID)
-		c.Set(sharedContext.MemberEmailKey, claims.Email)
+		c.Set(sharedHttp.MemberIDKey, claims.MemberID)
+		c.Set(sharedHttp.MemberEmailKey, claims.Email)
+
+		// context.Context에도 memberID 저장 (로깅용)
+		ctx := context.WithValue(c.Request.Context(), sharedHttp.MemberIDKey, claims.MemberID)
+		c.Request = c.Request.WithContext(ctx)
+
 		c.Next()
 	}
 }

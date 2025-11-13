@@ -27,7 +27,9 @@ func Setup(env string) {
 		handler = slog.NewTextHandler(os.Stdout, opts)
 	}
 
-	logger := slog.New(handler)
+	// Wrap with ContextHandler to automatically extract memberID from context
+	contextHandler := NewContextHandler(handler)
+	logger := slog.New(contextHandler)
 	slog.SetDefault(logger)
 
 	slog.Info("Logger 초기화", "env", env, "level", opts.Level.Level().String())

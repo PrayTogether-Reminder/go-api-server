@@ -1,11 +1,10 @@
-package context
+package http
 
 import (
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
 	"net/http"
-	"strconv"
 
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,17 +20,12 @@ func GetMemberID(c *gin.Context) (uint32, bool) {
 		return 0, false
 	}
 
-	idStr, ok := memberID.(string)
+	id, ok := memberID.(uint32)
 	if !ok {
 		return 0, false
 	}
 
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		return 0, false
-	}
-
-	return uint32(id), true
+	return id, true
 }
 
 // RequireMemberID retrieves the authenticated user's ID from the Gin context.

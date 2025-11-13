@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	sharedContext "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/context"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"log/slog"
 	"time"
 
@@ -46,7 +46,7 @@ func LoggerMiddleware() gin.HandlerFunc {
 			"userAgent", c.Request.UserAgent(), // Additional info
 		}
 
-		if memberID, exists := c.Get(sharedContext.MemberIDKey); exists {
+		if memberID, exists := c.Get(sharedHttp.MemberIDKey); exists {
 			fields = append(fields, "memberID", memberID)
 		}
 

@@ -1,9 +1,8 @@
 package member
 
 import (
-	sharedContext "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/context"
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/handler"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,7 +17,7 @@ func NewMemberHandler(memberService *MemberService) *MemberHandler {
 }
 
 func (h *MemberHandler) GetProfile(c *gin.Context) {
-	MemberID, ok := sharedContext.RequireMemberID(c)
+	MemberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
@@ -26,11 +25,11 @@ func (h *MemberHandler) GetProfile(c *gin.Context) {
 	response, err := h.memberService.GetProfile(c.Request.Context(), MemberID)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			handler.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		handler.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 

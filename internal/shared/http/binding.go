@@ -1,4 +1,4 @@
-package handler
+package http
 
 import (
 	"net/http"
@@ -14,7 +14,7 @@ import (
 // Usage:
 //
 //	var req SignupRequest
-//	if !handler.BindJSON(c, &req) {
+//	if !http.BindJSON(c, &req) {
 //	    return
 //	}
 func BindJSON(c *gin.Context, obj any) bool {
@@ -40,7 +40,7 @@ func BindJSON(c *gin.Context, obj any) bool {
 // Usage:
 //
 //	var req InfiniteScrollRequest
-//	if !handler.BindQuery(c, &req) {
+//	if !http.BindQuery(c, &req) {
 //	    return
 //	}
 func BindQuery(c *gin.Context, obj any) bool {
@@ -58,20 +58,4 @@ func BindQuery(c *gin.Context, obj any) bool {
 		return false
 	}
 	return true
-}
-
-// RespondError sends an error response with logging
-//
-// Usage:
-//
-//	if err := service.DoSomething(); err != nil {
-//	    handler.RespondError(c, err, sharedError.InternalServerError)
-//	    return
-//	}
-func RespondError(c *gin.Context, err error, errResp sharedError.ErrorResponse) {
-	// Add error to context for middleware logging
-	c.Error(err)
-
-	// Send error response
-	c.JSON(errResp.Status, errResp)
 }

@@ -2,7 +2,7 @@ package auth
 
 import (
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/handler"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,18 +20,18 @@ func (a *AuthHandler) Login(c *gin.Context) {
 	var request LoginRequest
 
 	// Parse and validate JSON request
-	if !handler.BindJSON(c, &request) {
+	if !sharedHttp.BindJSON(c, &request) {
 		return
 	}
 
 	response, err := a.authService.Login(c.Request.Context(), &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			handler.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		handler.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -42,18 +42,18 @@ func (a *AuthHandler) Signup(c *gin.Context) {
 	var request SignupRequest
 
 	// Parse and validate JSON request
-	if !handler.BindJSON(c, &request) {
+	if !sharedHttp.BindJSON(c, &request) {
 		return
 	}
 
 	err := a.authService.Signup(c.Request.Context(), &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			handler.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		handler.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 	c.JSON(201, gin.H{})
