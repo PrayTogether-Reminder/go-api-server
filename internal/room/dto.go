@@ -19,13 +19,3 @@ type InfiniteScrollRequest struct {
 type InfiniteScrollResponse struct {
 	Rooms []RoomInfo `json:"rooms"` // 방 목록
 }
-
-// NewInfiniteScrollResponse creates a new InfiniteScrollResponse
-func NewInfiniteScrollResponse(rooms []RoomInfo) *InfiniteScrollResponse {
-	if rooms == nil {
-		rooms = make([]RoomInfo, 0)
-	}
-	return &InfiniteScrollResponse{
-		Rooms: rooms,
-	}
-}
