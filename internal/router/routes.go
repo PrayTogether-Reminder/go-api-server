@@ -53,5 +53,6 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	roomV1.Use(middleware.JWT(cfg))
 	{
 		roomV1.GET("", roomHandler.GetRoomsByInfiniteScroll)
+		roomV1.POST("", roomHandler.CreateRoom)
 	}
 }

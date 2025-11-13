@@ -38,6 +38,6 @@ func NewRoomMember(memberID, roomID uint32, role string, isNotification bool) *M
 }
 
 const (
-	RoomRoleAdmin  = "ADMIN"  // 방 관리자
+	RoomRoleOwner  = "OWNER"  // 방 소유자
 	RoomRoleMember = "MEMBER" // 일반 멤버
 )

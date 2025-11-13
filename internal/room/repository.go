@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"gorm.io/gorm"
 )
 
@@ -80,6 +81,11 @@ func (r *RoomRepository) FindRoomInfosByMemberIDAfter(ctx context.Context, db *g
 	return results, nil
 }
 
+// Create creates a new room
+func (r *RoomRepository) Create(ctx context.Context, db *gorm.DB, room *model.Room) error {
+	return db.WithContext(ctx).Create(room).Error
+}
+
 // -------------------------------------------------
 
 type MemberCount struct {
@@ -115,4 +121,9 @@ func (r *MemberRoomRepository) FindMemberCountsByRoomIDs(ctx context.Context, db
 	}
 
 	return results, nil
+}
+
+// Create creates a new member_room relationship
+func (r *MemberRoomRepository) Create(ctx context.Context, db *gorm.DB, memberRoom *model.MemberRoom) error {
+	return db.WithContext(ctx).Create(memberRoom).Error
 }

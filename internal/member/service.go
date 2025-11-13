@@ -27,7 +27,7 @@ func (s *MemberService) GetProfile(ctx context.Context, memberID uint32) (*GetPr
 		member, err := s.memberRepository.FindByID(ctx, tx, memberID)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return fmt.Errorf("회원을 찾을 수 없습니다  %w", memberID, ErrMemberNotFound)
+				return fmt.Errorf("회원을 찾을 수 없습니다: %w", memberID, ErrMemberNotFound)
 			}
 			return fmt.Errorf("회원 조회 실패: %w", err)
 		}

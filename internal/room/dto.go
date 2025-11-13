@@ -19,3 +19,9 @@ type InfiniteScrollRequest struct {
 type InfiniteScrollResponse struct {
 	Rooms []RoomInfo `json:"rooms"` // 방 목록
 }
+
+// CreateRoomRequest represents the request for creating a new room
+type CreateRoomRequest struct {
+	Name        string `json:"name" binding:"required,min=1,max=50"`
+	Description string `json:"description" binding:"required,min=1,max=200"`
+}

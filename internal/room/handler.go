@@ -20,7 +20,6 @@ func NewRoomHandler(roomService *RoomService) *RoomHandler {
 	}
 }
 
-// todo : domain err + room create handler
 // GetRoomsByInfiniteScroll handles GET /api/v1/rooms
 func (h *RoomHandler) GetRoomsByInfiniteScroll(c *gin.Context) {
 	memberID, ok := sharedHttp.RequireMemberID(c)
@@ -51,4 +50,30 @@ func (h *RoomHandler) GetRoomsByInfiniteScroll(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// CreateRoom handles POST /api/v1/rooms
+func (h *RoomHandler) CreateRoom(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	var request CreateRoomRequest
+	if !sharedHttp.BindJSON(c, &request) {
+		return
+	}
+
+	response, err := h.roomService.CreateRoom(c.Request.Context(), memberID, &request)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusCreated, response)
 }

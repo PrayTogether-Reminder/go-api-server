@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"gorm.io/gorm"
 )
 
@@ -106,4 +108,35 @@ func (s *RoomService) fetchRoomInfosByMember(ctx context.Context, tx *gorm.DB, m
 		return nil, fmt.Errorf("회원 방 조회 도중 오류 발생: %w", memberID, err)
 	}
 	return roomInfos, nil
+}
+
+// CreateRoom creates a new room and adds the member as OWNER
+// Java의 createRoom 메서드와 동일한 로직
+func (s *RoomService) CreateRoom(ctx context.Context, memberID uint32, request *CreateRoomRequest) (*sharedHttp.MessageResponse, error) {
+	var response *sharedHttp.MessageResponse
+
+	err := database.WithTransaction(ctx, s.db, func(tx *gorm.DB) error {
+		// 1. Create room
+		room := model.NewRoom(request.Name, request.Description)
+		if err := s.roomRepository.Create(ctx, tx, room); err != nil {
+			return fmt.Errorf("방 생성 실패: %w", err)
+		}
+
+		// 2. Add member to room as OWNER
+		memberRoom := model.NewRoomMember(memberID, room.ID, model.RoomRoleOwner, true)
+		if err := s.memberRoomRepository.Create(ctx, tx, memberRoom); err != nil {
+			return fmt.Errorf("방 멤버 추가 실패: %w", err)
+		}
+
+		response = &sharedHttp.MessageResponse{
+			Message: "방 생성을 완료했습니다.",
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
