@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
@@ -31,9 +32,11 @@ func SetupTestRouter() *gin.Engine {
 func SetupAuthenticatedRouter(memberID uint32) *gin.Engine {
 	router := SetupTestRouter()
 
-	// Simulate the result of JWT middleware: memberID in context
+	// Simulate the result of JWT middleware: memberID in context as string
+	// JWT stores memberID as string, so we do the same in tests
+	memberIDStr := strconv.FormatUint(uint64(memberID), 10)
 	router.Use(func(c *gin.Context) {
-		c.Set(sharedHttp.MemberIDKey, memberID)
+		c.Set(sharedHttp.MemberIDKey, memberIDStr)
 		c.Next()
 	})
 

@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
@@ -20,12 +21,19 @@ func GetMemberID(c *gin.Context) (uint32, bool) {
 		return 0, false
 	}
 
-	id, ok := memberID.(uint32)
+	// JWT claims는 memberID를 string으로 저장
+	// 여기서 uint32로 변환
+	memberIDStr, ok := memberID.(string)
 	if !ok {
 		return 0, false
 	}
 
-	return id, true
+	memberIDUint64, err := strconv.ParseUint(memberIDStr, 10, 32)
+	if err != nil {
+		return 0, false
+	}
+
+	return uint32(memberIDUint64), true
 }
 
 // RequireMemberID retrieves the authenticated user's ID from the Gin context.
