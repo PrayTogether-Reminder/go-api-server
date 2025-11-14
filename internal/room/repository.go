@@ -89,8 +89,8 @@ func (r *RoomRepository) Create(ctx context.Context, db *gorm.DB, room *model.Ro
 // -------------------------------------------------
 
 type MemberCount struct {
-	RoomID      int64 `gorm:"column:room_id"`
-	MemberCount int64 `gorm:"column:member_count"`
+	RoomID      int64 // room_id , gorm tag -> mapping table columne
+	MemberCount int64 // member_count , you need remove gorm tag
 }
 
 // MemberRoomRepository handles database operations for member_room relationships
@@ -110,11 +110,11 @@ func (r *MemberRoomRepository) FindMemberCountsByRoomIDs(ctx context.Context, db
 	}
 
 	err := db.WithContext(ctx).
-		Table("member_room").
+		Model(&model.MemberRoom{}).
 		Select("room_id, COUNT(*) as member_count").
 		Where("room_id IN ?", roomIDs).
 		Group("room_id").
-		Scan(&results).Error
+		Find(&results).Error
 
 	if err != nil {
 		return nil, err
