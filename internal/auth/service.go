@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
@@ -11,7 +13,6 @@ import (
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/token"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"strconv"
 )
 
 type AuthService struct {
@@ -46,7 +47,7 @@ func (a *AuthService) Login(ctx context.Context, request *LoginRequest) (*LoginR
 	}
 
 	// 3. Generate JWT tokens
-	memberID := strconv.FormatUint(uint64(member.ID), 10)
+	memberID := strconv.FormatInt(int64(member.ID), 10)
 	accessToken, err := a.tokenManager.GenerateAccessToken(memberID, member.Email)
 	if err != nil {
 		return nil, fmt.Errorf("AccessToken 생성 실패: memberID=%s %w", memberID, err)

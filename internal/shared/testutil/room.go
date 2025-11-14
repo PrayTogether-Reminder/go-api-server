@@ -11,7 +11,7 @@ import (
 
 // CreateTestRooms creates rooms and member-room relations for pagination-heavy tests.
 // Rooms are created with descending timestamps so cursor-based sorting scenarios are easy to verify.
-func CreateTestRooms(t *testing.T, db *gorm.DB, memberID uint32, count int) {
+func CreateTestRooms(t *testing.T, db *gorm.DB, memberID int64, count int) {
 	t.Helper()
 
 	if count <= 0 {

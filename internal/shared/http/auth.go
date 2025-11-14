@@ -15,32 +15,32 @@ const (
 	MemberEmailKey = "member_email"
 )
 
-func GetMemberID(c *gin.Context) (uint32, bool) {
+func GetMemberID(c *gin.Context) (int64, bool) {
 	memberID, exists := c.Get(MemberIDKey)
 	if !exists {
 		return 0, false
 	}
 
 	// JWT claims는 memberID를 string으로 저장
-	// 여기서 uint32로 변환
+	// 여기서 int64로 변환
 	memberIDStr, ok := memberID.(string)
 	if !ok {
 		return 0, false
 	}
 
-	memberIDUint64, err := strconv.ParseUint(memberIDStr, 10, 32)
+	memberIDInt, err := strconv.ParseInt(memberIDStr, 10, 64)
 	if err != nil {
 		return 0, false
 	}
 
-	return uint32(memberIDUint64), true
+	return memberIDInt, true
 }
 
 // RequireMemberID retrieves the authenticated user's ID from the Gin context.
 // If the user ID is not found, automatically sends an authentication error response.
 // Returns the user ID and true if found, empty string and false if not found (error already sent).
 // Use this in most handlers to reduce boilerplate.
-func RequireMemberID(c *gin.Context) (uint32, bool) {
+func RequireMemberID(c *gin.Context) (int64, bool) {
 	memberID, ok := GetMemberID(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, sharedError.ErrorResponse{

@@ -20,7 +20,7 @@ func NewMemberService(db *gorm.DB, memberRepository *MemberRepository) *MemberSe
 	}
 }
 
-func (s *MemberService) GetProfile(ctx context.Context, memberID uint32) (*GetProfileResponse, error) {
+func (s *MemberService) GetProfile(ctx context.Context, memberID int64) (*GetProfileResponse, error) {
 	var response *GetProfileResponse
 
 	err := database.WithTransaction(ctx, s.db, func(tx *gorm.DB) error {

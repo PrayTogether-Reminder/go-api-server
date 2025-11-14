@@ -29,12 +29,12 @@ func SetupTestRouter() *gin.Engine {
 //
 // In production: Request → JWT Middleware (validate token) → set memberID → Handler
 // In test: Request → Mock Middleware (directly set memberID) → Handler
-func SetupAuthenticatedRouter(memberID uint32) *gin.Engine {
+func SetupAuthenticatedRouter(memberID int64) *gin.Engine {
 	router := SetupTestRouter()
 
 	// Simulate the result of JWT middleware: memberID in context as string
 	// JWT stores memberID as string, so we do the same in tests
-	memberIDStr := strconv.FormatUint(uint64(memberID), 10)
+	memberIDStr := strconv.FormatInt(int64(memberID), 10)
 	router.Use(func(c *gin.Context) {
 		c.Set(sharedHttp.MemberIDKey, memberIDStr)
 		c.Next()

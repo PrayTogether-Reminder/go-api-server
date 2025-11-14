@@ -107,7 +107,7 @@ func TestFetchRoomsInfiniteScroll_Success_MultiplePages(t *testing.T) {
 	assert.Len(t, secondResponse.Rooms, 5, "Second page should have remaining 5 items")
 
 	// Verify no duplicate rooms between pages
-	firstPageIDs := make(map[uint32]bool)
+	firstPageIDs := make(map[int64]bool)
 	for _, rm := range firstResponse.Rooms {
 		firstPageIDs[rm.ID] = true
 	}

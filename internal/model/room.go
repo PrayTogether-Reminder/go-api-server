@@ -3,7 +3,7 @@ package model
 // Room represents a prayer room in the system
 // Oracle IDENTITY (auto-increment) is used for ID generation
 type Room struct {
-	ID uint32 `gorm:"column:id;primaryKey;autoIncrement"`
+	ID int64 `gorm:"column:id;primaryKey;autoIncrement"`
 
 	// Core fields
 	Name        string `gorm:"column:name;type:VARCHAR2(50);not null"`         // 방 이름

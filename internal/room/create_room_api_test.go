@@ -1,11 +1,11 @@
 package room_test
 
 import (
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"net/http"
 	"strings"
 	"testing"
 
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/room"
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
 	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
@@ -16,7 +16,7 @@ import (
 
 // setupTestEnvironment creates all dependencies needed for room handler tests
 // Returns the handler, database, and a test member
-func setupTestEnvironment(t *testing.T) (*room.RoomHandler, *gorm.DB, uint32) {
+func setupTestEnvironment(t *testing.T) (*room.RoomHandler, *gorm.DB, int64) {
 	t.Helper()
 
 	// Setup test database
@@ -34,7 +34,7 @@ func setupTestEnvironment(t *testing.T) (*room.RoomHandler, *gorm.DB, uint32) {
 	roomService := room.NewRoomService(db, roomRepo, memberRoomRepo)
 	roomHandler := room.NewRoomHandler(roomService)
 
-	return roomHandler, db, testMember.ID
+	return roomHandler, db, int64(testMember.ID)
 }
 
 func TestCreateRoom_Success(t *testing.T) {

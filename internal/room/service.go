@@ -30,7 +30,7 @@ func NewRoomService(db *gorm.DB, roomRepository *RoomRepository, memberRoomRepos
 
 // FetchInfiniteScroll fetches rooms with infinite scroll pagination
 // Java의 fetchRoomsInfiniteScroll 메서드와 동일한 로직
-func (s *RoomService) FetchInfiniteScroll(ctx context.Context, memberID uint32, request *InfiniteScrollRequest) (*InfiniteScrollResponse, error) {
+func (s *RoomService) FetchInfiniteScroll(ctx context.Context, memberID int64, request *InfiniteScrollRequest) (*InfiniteScrollResponse, error) {
 	var response *InfiniteScrollResponse
 
 	err := database.WithTransaction(ctx, s.db, func(tx *gorm.DB) error {
@@ -46,7 +46,7 @@ func (s *RoomService) FetchInfiniteScroll(ctx context.Context, memberID uint32, 
 		}
 
 		// 2. Extract room IDs
-		roomIDs := make([]uint32, 0, len(roomInfos))
+		roomIDs := make([]int64, 0, len(roomInfos))
 		for _, room := range roomInfos {
 			roomIDs = append(roomIDs, room.ID)
 		}
@@ -58,7 +58,7 @@ func (s *RoomService) FetchInfiniteScroll(ctx context.Context, memberID uint32, 
 		}
 
 		// Convert to map for easy lookup
-		countMap := make(map[uint32]int)
+		countMap := make(map[int64]int64)
 		for _, result := range memberCounts {
 			countMap[result.RoomID] = result.MemberCount
 		}
@@ -84,7 +84,7 @@ func (s *RoomService) FetchInfiniteScroll(ctx context.Context, memberID uint32, 
 
 // fetchRoomInfosByMember fetches rooms for a member based on pagination
 // Java의 fetchRoomInfosByMember 메서드와 동일한 로직
-func (s *RoomService) fetchRoomInfosByMember(ctx context.Context, tx *gorm.DB, memberID uint32, request *InfiniteScrollRequest) ([]RoomInfo, error) {
+func (s *RoomService) fetchRoomInfosByMember(ctx context.Context, tx *gorm.DB, memberID int64, request *InfiniteScrollRequest) ([]RoomInfo, error) {
 	// TODO: 전략 패턴으로 orderBy 및 dir에 따른 repository 메서드 차별화 구현 (time, name, memberCnt 등)
 
 	// Initial request (first page)
@@ -112,7 +112,7 @@ func (s *RoomService) fetchRoomInfosByMember(ctx context.Context, tx *gorm.DB, m
 
 // CreateRoom creates a new room and adds the member as OWNER
 // Java의 createRoom 메서드와 동일한 로직
-func (s *RoomService) CreateRoom(ctx context.Context, memberID uint32, request *CreateRoomRequest) (*sharedHttp.MessageResponse, error) {
+func (s *RoomService) CreateRoom(ctx context.Context, memberID int64, request *CreateRoomRequest) (*sharedHttp.MessageResponse, error) {
 	var response *sharedHttp.MessageResponse
 
 	err := database.WithTransaction(ctx, s.db, func(tx *gorm.DB) error {

@@ -11,12 +11,12 @@ import (
 // RoomInfo represents room information with member details
 // Created by Repository queries (projection from JOIN)
 type RoomInfo struct {
-	ID             uint32    `json:"id"`             // 방 ID
+	ID             int64     `json:"id"`             // 방 ID
 	Name           string    `json:"name"`           // 방 이름
 	Description    string    `json:"description"`    // 방 설명
 	JoinedTime     time.Time `json:"joinedTime"`     // 가입 시간
 	IsNotification bool      `json:"isNotification"` // 알림 여부
-	MemberCount    int       `json:"memberCount"`    // 멤버 수
+	MemberCount    int64     `json:"memberCount"`    // 멤버 수
 }
 
 // ===== RoomRepository =====
@@ -28,7 +28,7 @@ func NewRoomRepository() *RoomRepository {
 }
 
 // FindRoomInfosByMemberIDInitial fetches the first page of rooms ordered by joined time desc
-func (r *RoomRepository) FindRoomInfosByMemberIDInitial(ctx context.Context, db *gorm.DB, memberID uint32, limit int) ([]RoomInfo, error) {
+func (r *RoomRepository) FindRoomInfosByMemberIDInitial(ctx context.Context, db *gorm.DB, memberID int64, limit int) ([]RoomInfo, error) {
 	var results []RoomInfo
 
 	err := db.WithContext(ctx).
@@ -55,7 +55,7 @@ func (r *RoomRepository) FindRoomInfosByMemberIDInitial(ctx context.Context, db 
 }
 
 // FindRoomInfosByMemberIDAfter fetches rooms after a specific cursor (created_time)
-func (r *RoomRepository) FindRoomInfosByMemberIDAfter(ctx context.Context, db *gorm.DB, memberID uint32, after time.Time, limit int) ([]RoomInfo, error) {
+func (r *RoomRepository) FindRoomInfosByMemberIDAfter(ctx context.Context, db *gorm.DB, memberID int64, after time.Time, limit int) ([]RoomInfo, error) {
 	var results []RoomInfo
 
 	err := db.WithContext(ctx).
@@ -89,8 +89,8 @@ func (r *RoomRepository) Create(ctx context.Context, db *gorm.DB, room *model.Ro
 // -------------------------------------------------
 
 type MemberCount struct {
-	RoomID      uint32 `gorm:"column:room_id"`
-	MemberCount int    `gorm:"column:member_count"`
+	RoomID      int64 `gorm:"column:room_id"`
+	MemberCount int64 `gorm:"column:member_count"`
 }
 
 // MemberRoomRepository handles database operations for member_room relationships
@@ -102,7 +102,7 @@ func NewMemberRoomRepository() *MemberRoomRepository {
 }
 
 // FindMemberCountsByRoomIDs fetches member counts for given room IDs (batch operation)
-func (r *MemberRoomRepository) FindMemberCountsByRoomIDs(ctx context.Context, db *gorm.DB, roomIDs []uint32) ([]MemberCount, error) {
+func (r *MemberRoomRepository) FindMemberCountsByRoomIDs(ctx context.Context, db *gorm.DB, roomIDs []int64) ([]MemberCount, error) {
 	var results []MemberCount
 
 	if len(roomIDs) == 0 {
