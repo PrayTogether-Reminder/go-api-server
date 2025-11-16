@@ -47,3 +47,16 @@ func (s *MemberService) GetProfile(ctx context.Context, memberID int64) (*GetPro
 
 	return response, nil
 }
+
+// ValidateMemberExists checks if a member exists by ID
+// Returns ErrMemberNotFound if the member does not exist
+func (s *MemberService) ValidateMemberExists(ctx context.Context, tx *gorm.DB, memberID int64) error {
+	_, err := s.memberRepository.IsExistByID(ctx, tx, memberID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrMemberNotFound
+		}
+		return fmt.Errorf("회원 존재 확인 실패: %w", err)
+	}
+	return nil
+}

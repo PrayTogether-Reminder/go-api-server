@@ -127,3 +127,17 @@ func (r *MemberRoomRepository) FindMemberCountsByRoomIDs(ctx context.Context, db
 func (r *MemberRoomRepository) Create(ctx context.Context, db *gorm.DB, memberRoom *model.MemberRoom) error {
 	return db.WithContext(ctx).Create(memberRoom).Error
 }
+
+// DeleteByMemberIDAndRoomID deletes a member_room relationship by memberID and roomID
+// Returns true if a record was deleted, false if no record was found
+func (r *MemberRoomRepository) DeleteByMemberIDAndRoomID(ctx context.Context, db *gorm.DB, memberID int64, roomID int64) (bool, error) {
+	result := db.WithContext(ctx).
+		Where("member_id = ? AND room_id = ?", memberID, roomID).
+		Delete(&model.MemberRoom{})
+
+	if result.Error != nil {
+		return false, result.Error
+	}
+
+	return result.RowsAffected > 0, nil
+}

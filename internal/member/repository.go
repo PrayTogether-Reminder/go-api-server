@@ -27,6 +27,20 @@ func (m *MemberRepository) IsExistByEmail(ctx context.Context, db *gorm.DB, emai
 	return count > 0, nil
 }
 
+func (m *MemberRepository) IsExistByID(ctx context.Context, db *gorm.DB, memberID int64) (bool, error) {
+	var count int64
+	err := db.WithContext(ctx).
+		Model(&model.Member{}).
+		Where("id = ?", memberID).
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
 func (m *MemberRepository) Create(ctx context.Context, db *gorm.DB, member *model.Member) error {
 	return db.WithContext(ctx).Create(member).Error
 }

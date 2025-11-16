@@ -17,14 +17,20 @@ type RoomService struct {
 	db                   *gorm.DB
 	roomRepository       *RoomRepository
 	memberRoomRepository *MemberRoomRepository
+	memberValidator      MemberValidator
+}
+
+type MemberValidator interface {
+	ValidateMemberExists(ctx context.Context, tx *gorm.DB, memberID int64) error
 }
 
 // NewRoomService creates a new RoomService instance
-func NewRoomService(db *gorm.DB, roomRepository *RoomRepository, memberRoomRepository *MemberRoomRepository) *RoomService {
+func NewRoomService(db *gorm.DB, roomRepository *RoomRepository, memberRoomRepository *MemberRoomRepository, memberValidation MemberValidator) *RoomService {
 	return &RoomService{
 		db:                   db,
 		roomRepository:       roomRepository,
 		memberRoomRepository: memberRoomRepository,
+		memberValidator:      memberValidation,
 	}
 }
 
@@ -130,6 +136,38 @@ func (s *RoomService) CreateRoom(ctx context.Context, memberID int64, request *C
 
 		response = &sharedHttp.MessageResponse{
 			Message: "방 생성을 완료했습니다.",
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+// ExitRoom removes a member from a room
+// Java의 deleteRoom 메서드와 동일한 로직
+func (s *RoomService) ExitRoom(ctx context.Context, memberID int64, roomID int64) (*sharedHttp.MessageResponse, error) {
+	var response *sharedHttp.MessageResponse
+
+	err := database.WithTransaction(ctx, s.db, func(tx *gorm.DB) error {
+		if err := s.memberValidator.ValidateMemberExists(ctx, tx, memberID); err != nil {
+			return err
+		}
+
+		deleted, err := s.memberRoomRepository.DeleteByMemberIDAndRoomID(ctx, tx, memberID, roomID)
+		if err != nil {
+			return fmt.Errorf("방-회원 관계 삭제 실패: %w", err)
+		}
+
+		if !deleted {
+			return ErrMemberRoomNotFound
+		}
+
+		response = &sharedHttp.MessageResponse{
+			Message: "방을 나갔습니다.",
 		}
 		return nil
 	})

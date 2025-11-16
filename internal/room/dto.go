@@ -25,3 +25,7 @@ type CreateRoomRequest struct {
 	Name        string `json:"name" binding:"required,min=1,max=50"`
 	Description string `json:"description" binding:"required,min=1,max=200"`
 }
+
+type ExitRoomRequest struct {
+	RoomID int64 `uri:"roomId" binding:"required,gt=0"`
+}
