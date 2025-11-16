@@ -13,7 +13,7 @@ func NewMemberRepository() *MemberRepository {
 	return &MemberRepository{}
 }
 
-func (m *MemberRepository) IsExist(ctx context.Context, db *gorm.DB, email string) (bool, error) {
+func (m *MemberRepository) IsExistByEmail(ctx context.Context, db *gorm.DB, email string) (bool, error) {
 	var count int64
 	err := db.WithContext(ctx).
 		Model(&model.Member{}).

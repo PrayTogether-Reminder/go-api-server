@@ -47,7 +47,7 @@ func (a *AuthService) Login(ctx context.Context, request *LoginRequest) (*LoginR
 	}
 
 	// 3. Generate JWT tokens
-	memberID := strconv.FormatInt(int64(member.ID), 10)
+	memberID := strconv.FormatInt(member.ID, 10)
 	accessToken, err := a.tokenManager.GenerateAccessToken(memberID, member.Email)
 	if err != nil {
 		return nil, fmt.Errorf("AccessToken 생성 실패: memberID=%s %w", memberID, err)
@@ -69,7 +69,7 @@ func (a *AuthService) Login(ctx context.Context, request *LoginRequest) (*LoginR
 func (a *AuthService) Signup(ctx context.Context, request *SignupRequest) error {
 	log := logger.FromContext(ctx)
 	return database.WithTransaction(ctx, a.db, func(tx *gorm.DB) error {
-		exists, err := a.memberRepository.IsExist(ctx, tx, request.Email)
+		exists, err := a.memberRepository.IsExistByEmail(ctx, tx, request.Email)
 		if err != nil {
 			return fmt.Errorf("회원 존재 확인 오류: email=%s %w", logger.MaskEmail(request.Email), err)
 		}
