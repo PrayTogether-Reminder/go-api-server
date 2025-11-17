@@ -3,6 +3,8 @@ package room
 import (
 	"context"
 	"fmt"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/domain"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
 	"time"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
@@ -177,4 +179,60 @@ func (s *RoomService) ExitRoom(ctx context.Context, memberID int64, roomID int64
 	}
 
 	return response, nil
+}
+
+func (s *RoomService) FetchMembersInRoom(ctx context.Context, memberID int64, roomID int64) (*FetchRoomMemberResponse, error) {
+	var response *FetchRoomMemberResponse
+	logger.FromContext(ctx).Info("[FetchMEmbersInRoom]", "start", time.Now())
+	err := database.WithTransaction(ctx, s.db, func(tx *gorm.DB) error {
+		// 1. Validate member exists in room
+		err := s.ValidateMemberExistInRoom(ctx, tx, memberID, roomID)
+		if err != nil {
+			return err
+		}
+
+		// 2. Find room members with member information (JOIN query)
+		roomMembers, err := s.memberRoomRepository.FindMemberRooms(ctx, tx, roomID)
+		if err != nil {
+			return fmt.Errorf("방 멤버 조회 실패: %w", err)
+		}
+
+		// 3. Convert to DTOs with phone number suffix
+		var dtos []RoomMemberDto
+		for _, rm := range roomMembers {
+			phoneNumber, err := domain.NewPhoneNumber(rm.PhoneNumber)
+			if err != nil {
+				return err
+			}
+			dtos = append(dtos, RoomMemberDto{
+				ID:                rm.MemberID,
+				Name:              rm.Name,
+				PhoneNumberSuffix: phoneNumber.GetSuffix(),
+			})
+		}
+
+		response = &FetchRoomMemberResponse{
+			RoomMembers: dtos,
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+// ValidateMemberExistInRoom checks if a member exists in a room
+// Should be called within a transaction (tx is passed as parameter)
+func (s *RoomService) ValidateMemberExistInRoom(ctx context.Context, tx *gorm.DB, memberID int64, roomID int64) error {
+	existing, err := s.memberRoomRepository.IsExistMemberInRoom(ctx, tx, memberID, roomID)
+	if err != nil {
+		return fmt.Errorf("방에 회원이 있는지 검증하는 도중 오류 발생 : %w", err)
+	}
+	if !existing {
+		return ErrMemberRoomNotFound
+	}
+	return nil
 }

@@ -103,3 +103,28 @@ func (h *RoomHandler) DeleteMemberRoom(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *RoomHandler) FetchRoomMembers(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	var request FetchRoomMemberRequest
+	if !sharedHttp.BindURI(c, &request) {
+		return
+	}
+
+	response, err := h.roomService.FetchMembersInRoom(c.Request.Context(), memberID, request.RoomID)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}

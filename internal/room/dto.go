@@ -29,3 +29,17 @@ type CreateRoomRequest struct {
 type ExitRoomRequest struct {
 	RoomID int64 `uri:"roomId" binding:"gt=0"`
 }
+
+type FetchRoomMemberRequest struct {
+	RoomID int64 `uri:"roomId" binding:"gt=0"`
+}
+
+type FetchRoomMemberResponse struct {
+	RoomMembers []RoomMemberDto `json:"members"`
+}
+
+type RoomMemberDto struct {
+	ID                int64  `json:"id"`
+	Name              string `json:"name"`
+	PhoneNumberSuffix string `json:"phoneNumberSuffix"`
+}

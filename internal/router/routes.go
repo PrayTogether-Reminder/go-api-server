@@ -54,6 +54,8 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	{
 		roomV1.GET("", roomHandler.GetRoomsByInfiniteScroll)
 		roomV1.POST("", roomHandler.CreateRoom)
-		roomV1.DELETE("/:roomID", roomHandler.DeleteMemberRoom)
+		roomV1.DELETE("/:roomId", roomHandler.DeleteMemberRoom)
+		roomV1.GET("/:roomId/members", roomHandler.FetchRoomMembers)
+
 	}
 }

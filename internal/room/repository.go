@@ -93,6 +93,12 @@ type MemberCount struct {
 	MemberCount int64 // member_count , you need remove gorm tag
 }
 
+type RoomMember struct {
+	MemberID    int64
+	Name        string
+	PhoneNumber string
+}
+
 // MemberRoomRepository handles database operations for member_room relationships
 
 type MemberRoomRepository struct{}
@@ -140,4 +146,35 @@ func (r *MemberRoomRepository) DeleteByMemberIDAndRoomID(ctx context.Context, db
 	}
 
 	return result.RowsAffected > 0, nil
+}
+
+func (r *MemberRoomRepository) IsExistMemberInRoom(ctx context.Context, db *gorm.DB, memberID int64, roomID int64) (bool, error) {
+	var count int64
+	err := db.WithContext(ctx).
+		Model(&model.MemberRoom{}).
+		Where("member_id = ? AND room_id = ?", memberID, roomID).
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+func (r *MemberRoomRepository) FindMemberRooms(ctx context.Context, db *gorm.DB, roomID int64) ([]RoomMember, error) {
+	var results []RoomMember
+	err := db.WithContext(ctx).
+		Table("member_room mr").
+		Select("m.id as member_id, m.name, m.phone_number").
+		Joins("JOIN member m ON mr.member_id = m.id").
+		Where("room_id = ?", roomID).
+		Order("m.name ASC").
+		Scan(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
