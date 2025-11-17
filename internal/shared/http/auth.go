@@ -9,11 +9,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Context keys for storing user authentication information
+// contextKey is a custom type for context keys to avoid collisions
+type contextKey string
+
+// Context keys for storing user authentication information in context.Context
+const (
+	memberIDContextKey    contextKey = "member_id"
+	memberEmailContextKey contextKey = "member_email"
+)
+
+// Gin context keys (string type for Gin's c.Set/c.Get)
 const (
 	MemberIDKey    = "member_id"
 	MemberEmailKey = "member_email"
 )
+
+// ContextKey returns the context.Context key for member ID (used in middleware)
+func ContextKey() contextKey {
+	return memberIDContextKey
+}
+
+// EmailContextKey returns the context.Context key for member email (used in middleware)
+func EmailContextKey() contextKey {
+	return memberEmailContextKey
+}
 
 func GetMemberID(c *gin.Context) (int64, bool) {
 	memberID, exists := c.Get(MemberIDKey)

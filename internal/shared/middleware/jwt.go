@@ -109,8 +109,8 @@ func JWT(cfg *config.Config) gin.HandlerFunc {
 		c.Set(sharedHttp.MemberIDKey, claims.MemberID)
 		c.Set(sharedHttp.MemberEmailKey, claims.Email)
 
-		// context.Context에도 memberID 저장 (로깅용)
-		ctx := context.WithValue(c.Request.Context(), sharedHttp.MemberIDKey, claims.MemberID)
+		// context.Context에도 memberID 저장 (로깅용) - custom key type 사용
+		ctx := context.WithValue(c.Request.Context(), sharedHttp.ContextKey(), claims.MemberID)
 		c.Request = c.Request.WithContext(ctx)
 
 		c.Next()

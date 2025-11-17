@@ -15,7 +15,7 @@ import (
 //	}
 func RespondError(c *gin.Context, err error, errResp sharedError.ErrorResponse) {
 	// Add error to context for middleware logging
-	c.Error(err)
+	_ = c.Error(err)
 
 	// Send error response
 	c.JSON(errResp.Status, errResp)

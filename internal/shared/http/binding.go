@@ -20,7 +20,7 @@ import (
 func BindJSON(c *gin.Context, obj any) bool {
 	if err := c.ShouldBindJSON(obj); err != nil {
 		// Add error to context for middleware logging
-		c.Error(err)
+		_ = c.Error(err)
 
 		// Check if it's a validation error
 		if resp, ok := validator.ToErrorResponse(err); ok {
@@ -46,7 +46,7 @@ func BindJSON(c *gin.Context, obj any) bool {
 func BindQuery(c *gin.Context, obj any) bool {
 	if err := c.ShouldBindQuery(obj); err != nil {
 		// Add error to context for middleware logging
-		c.Error(err)
+		_ = c.Error(err)
 
 		// Check if it's a validation error
 		if resp, ok := validator.ToErrorResponse(err); ok {
@@ -72,7 +72,7 @@ func BindQuery(c *gin.Context, obj any) bool {
 func BindURI(c *gin.Context, obj any) bool {
 	if err := c.ShouldBindUri(obj); err != nil {
 		// Add error to context for middleware logging
-		c.Error(err)
+		_ = c.Error(err)
 
 		// Check if it's a validation error
 		if resp, ok := validator.ToErrorResponse(err); ok {
