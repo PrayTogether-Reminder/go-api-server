@@ -9,6 +9,34 @@ import (
 	"gorm.io/gorm"
 )
 
+// CreateTestRoom creates a single room with member-room relationship for the given member.
+// Returns the created room.
+func CreateTestRoom(t *testing.T, db *gorm.DB, memberID int64, name, description string) *model.Room {
+	t.Helper()
+
+	room := &model.Room{
+		Name:        name,
+		Description: description,
+	}
+
+	if err := db.Create(room).Error; err != nil {
+		t.Fatalf("failed to create test room: %v", err)
+	}
+
+	memberRoom := &model.MemberRoom{
+		MemberID:       memberID,
+		RoomID:         room.ID,
+		Role:           model.RoomRoleOwner,
+		IsNotification: true,
+	}
+
+	if err := db.Create(memberRoom).Error; err != nil {
+		t.Fatalf("failed to create member_room relationship: %v", err)
+	}
+
+	return room
+}
+
 // CreateTestRooms creates rooms and member-room relations for pagination-heavy tests.
 // Rooms are created with descending timestamps so cursor-based sorting scenarios are easy to verify.
 func CreateTestRooms(t *testing.T, db *gorm.DB, memberID int64, count int) {

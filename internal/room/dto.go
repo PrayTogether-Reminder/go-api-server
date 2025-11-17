@@ -27,5 +27,5 @@ type CreateRoomRequest struct {
 }
 
 type ExitRoomRequest struct {
-	RoomID int64 `uri:"roomId" binding:"required,gt=0"`
+	RoomID int64 `uri:"roomId" binding:"gt=0"`
 }
