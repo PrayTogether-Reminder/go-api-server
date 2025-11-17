@@ -18,7 +18,7 @@ func TestExitRoom_Success(t *testing.T) {
 	roomHandler, db, memberID := setupTestEnvironment(t)
 
 	router := testutil.SetupAuthenticatedRouter(memberID)
-	router.DELETE("/api/v1/rooms/:roomID", roomHandler.DeleteMemberRoom)
+	router.DELETE("/api/v1/rooms/:roomId", roomHandler.DeleteMemberRoom)
 
 	// Given: Create a test room with member-room relationship
 	testRoom := testutil.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
