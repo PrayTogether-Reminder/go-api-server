@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -50,4 +51,14 @@ func CreateTestMemberWithIndex(t *testing.T, db *gorm.DB, index int) *model.Memb
 	}
 
 	return member
+}
+
+// NewMemberRepository creates a new MemberRepository for testing
+func NewMemberRepository() *member.MemberRepository {
+	return member.NewMemberRepository()
+}
+
+// NewMemberService creates a new MemberService for testing
+func NewMemberService(db *gorm.DB, memberRepo *member.MemberRepository) *member.MemberService {
+	return member.NewMemberService(db, memberRepo)
 }

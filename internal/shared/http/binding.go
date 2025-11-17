@@ -20,7 +20,7 @@ import (
 func BindJSON(c *gin.Context, obj any) bool {
 	if err := c.ShouldBindJSON(obj); err != nil {
 		// Add error to context for middleware logging
-		c.Error(err)
+		_ = c.Error(err)
 
 		// Check if it's a validation error
 		if resp, ok := validator.ToErrorResponse(err); ok {
@@ -46,13 +46,39 @@ func BindJSON(c *gin.Context, obj any) bool {
 func BindQuery(c *gin.Context, obj any) bool {
 	if err := c.ShouldBindQuery(obj); err != nil {
 		// Add error to context for middleware logging
-		c.Error(err)
+		_ = c.Error(err)
 
 		// Check if it's a validation error
 		if resp, ok := validator.ToErrorResponse(err); ok {
 			c.JSON(http.StatusBadRequest, resp)
 		} else {
 			// Query parsing error or other binding errors
+			c.JSON(sharedError.ValidationFailed.Status, sharedError.ValidationFailed)
+		}
+		return false
+	}
+	return true
+}
+
+// BindURI parses and validates URI parameters (path variables)
+// Returns true if binding succeeded, false if failed (response already sent)
+//
+// Usage:
+//
+//	var req DeleteRoomURI
+//	if !http.BindURI(c, &req) {
+//	    return
+//	}
+func BindURI(c *gin.Context, obj any) bool {
+	if err := c.ShouldBindUri(obj); err != nil {
+		// Add error to context for middleware logging
+		_ = c.Error(err)
+
+		// Check if it's a validation error
+		if resp, ok := validator.ToErrorResponse(err); ok {
+			c.JSON(http.StatusBadRequest, resp)
+		} else {
+			// URI parsing error or other binding errors
 			c.JSON(sharedError.ValidationFailed.Status, sharedError.ValidationFailed)
 		}
 		return false

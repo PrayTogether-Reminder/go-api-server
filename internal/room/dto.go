@@ -25,3 +25,21 @@ type CreateRoomRequest struct {
 	Name        string `json:"name" binding:"required,min=1,max=50"`
 	Description string `json:"description" binding:"required,min=1,max=200"`
 }
+
+type ExitRoomRequest struct {
+	RoomID int64 `uri:"roomId" binding:"gt=0"`
+}
+
+type FetchRoomMemberRequest struct {
+	RoomID int64 `uri:"roomId" binding:"gt=0"`
+}
+
+type FetchRoomMemberResponse struct {
+	RoomMembers []RoomMemberDto `json:"members"`
+}
+
+type RoomMemberDto struct {
+	ID                int64  `json:"id"`
+	Name              string `json:"name"`
+	PhoneNumberSuffix string `json:"phoneNumberSuffix"`
+}

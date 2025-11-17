@@ -29,7 +29,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	// service
 	authService := auth.NewAuthService(db.DB, memberRepository, tokenManager)
 	memberService := member.NewMemberService(db.DB, memberRepository)
-	roomService := room.NewRoomService(db.DB, roomRepository, memberRoomRepository)
+	roomService := room.NewRoomService(db.DB, roomRepository, memberRoomRepository, memberService)
 
 	// handler
 	authHandler := auth.NewAuthHandler(authService)
@@ -54,5 +54,8 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	{
 		roomV1.GET("", roomHandler.GetRoomsByInfiniteScroll)
 		roomV1.POST("", roomHandler.CreateRoom)
+		roomV1.DELETE("/:roomId", roomHandler.DeleteMemberRoom)
+		roomV1.GET("/:roomId/members", roomHandler.FetchRoomMembers)
+
 	}
 }

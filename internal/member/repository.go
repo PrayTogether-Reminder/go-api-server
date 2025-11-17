@@ -13,11 +13,25 @@ func NewMemberRepository() *MemberRepository {
 	return &MemberRepository{}
 }
 
-func (m *MemberRepository) IsExist(ctx context.Context, db *gorm.DB, email string) (bool, error) {
+func (m *MemberRepository) IsExistByEmail(ctx context.Context, db *gorm.DB, email string) (bool, error) {
 	var count int64
 	err := db.WithContext(ctx).
 		Model(&model.Member{}).
 		Where("email = ?", email).
+		Count(&count).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+func (m *MemberRepository) IsExistByID(ctx context.Context, db *gorm.DB, memberID int64) (bool, error) {
+	var count int64
+	err := db.WithContext(ctx).
+		Model(&model.Member{}).
+		Where("id = ?", memberID).
 		Count(&count).Error
 
 	if err != nil {

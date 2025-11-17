@@ -28,10 +28,15 @@ func setupTestEnvironment(t *testing.T) (*room.RoomHandler, *gorm.DB, int64) {
 	// Create a test member for authenticated requests
 	testMember := testutil.CreateTestMember(t, db)
 
-	// Setup dependencies
+	// Setup dependencies - need to import member package
 	roomRepo := room.NewRoomRepository()
 	memberRoomRepo := room.NewMemberRoomRepository()
-	roomService := room.NewRoomService(db, roomRepo, memberRoomRepo)
+
+	// Create member service for validation
+	memberRepo := testutil.NewMemberRepository()
+	memberService := testutil.NewMemberService(db, memberRepo)
+
+	roomService := room.NewRoomService(db, roomRepo, memberRoomRepo, memberService)
 	roomHandler := room.NewRoomHandler(roomService)
 
 	return roomHandler, db, int64(testMember.ID)
