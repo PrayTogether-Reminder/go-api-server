@@ -1,32 +1,41 @@
-# Go + Gin Uber-style 코드 가이드라인
+# Go + Gin Clean Architecture 코드 가이드라인
 
 > **대상**: Java Spring Boot 개발자를 위한 Go + Gin 아키텍처 가이드
-> **목적**: 코드 리뷰 시 Uber-style 준수 여부와 Best Practice 체크
+> **목적**: 코드 리뷰 시 Clean Architecture 준수 여부와 Best Practice 체크
 
-## 🏗️ 프로젝트 아키텍처: 도메인별 수직 분할
+## 🏗️ 프로젝트 아키텍처: Light Clean Architecture + 도메인별 수직 분할
 
-이 프로젝트는 **Uber-style + 도메인별 수직 분할** 구조를 따릅니다:
+이 프로젝트는 **Light Clean Architecture + 도메인별 수직 분할** 구조를 따릅니다:
 
 ```
 internal/
 ├── member/                    # Member 도메인
-│   ├── handler/               # HTTP Layer
-│   ├── service/               # Business Logic Layer
-│   ├── repository/            # Data Access Layer
-│   └── constants.go           # 도메인 상수
+│   ├── handler/               # Presentation Layer (HTTP Interface)
+│   ├── usecase/               # Application Layer (Use Case Logic)
+│   ├── domain/                # Domain (Business Logic + GORM Tags)
+│   │   └── member.go          # Domain Entity with business methods
+│   └── repository/            # Infrastructure Layer (Data Access)
 ├── room/                      # Room 도메인
 │   ├── handler/
-│   ├── service/
+│   ├── usecase/
+│   ├── domain/
 │   └── repository/
-├── model/                     # 공유 Entity (Member, Room, Prayer 등)
-└── shared/                    # 공통 인프라 (middleware, database)
+└── shared/                    # 공통 인프라
+    ├── domain/                # 공유 Base Entity (BaseEntity 등)
+    ├── error/
+    ├── http/
+    ├── validator/
+    └── database/
 ```
 
-**핵심 원칙:**
-- ✅ 도메인별 독립적인 모듈 구성
-- ✅ Service 간 의존 허용 (순환 참조만 금지)
-- ✅ 공유 Model로 도메인 간 Entity 참조
-- ✅ 의존성 방향: `Member ← Room ← Prayer` (단방향)
+**핵심 원칙 (Light Clean - 실용적 접근):**
+- ✅ 도메인별 독립적인 모듈 구성 (순환 참조 절대 금지)
+- ✅ **Domain Entity는 GORM 태그 포함 가능** (실용적, 변환 로직 불필요)
+- ✅ **비즈니스 로직은 Domain Entity 메서드로 구현** (Validate, HashPassword 등)
+- ✅ UseCase는 다른 도메인 Repository 참조 가능 (UseCase 간 참조 금지)
+- ✅ 의존성 방향: `Handler → UseCase → Repository` (간결한 단방향)
+- ✅ 도메인 간 의존성: `member ← room ← prayer` (단방향만 허용)
+- ✅ **Repository는 구현체 직접 의존 OK** (Interface 선택적)
 
 ---
 
@@ -37,9 +46,11 @@ internal/
 ### ✅ 아키텍처 체크리스트
 
 - [ ] **올바른 레이어에 위치**하는가?
-- [ ] **의존성 방향**이 올바른가? (Handler → Service → Repository → DB)
+- [ ] **의존성 방향**이 올바른가? (Handler → UseCase → Repository)
 - [ ] **레이어 간 책임 분리**가 명확한가?
-- [ ] **순환 참조**가 없는가?
+- [ ] **순환 참조**가 없는가? (Domain Entity는 다른 도메인 Entity 직접 참조 금지)
+- [ ] **Domain Entity에 GORM 태그**가 있는가? (Light Clean에서는 OK)
+- [ ] **비즈니스 로직이 Domain Entity 메서드**로 구현되어 있는가?
 
 ### ✅ Go Best Practice
 
@@ -60,7 +71,7 @@ internal/
 
 ## 🏗️ 레이어별 아키텍처 가이드
 
-### 1️⃣ Handler Layer (≈ Spring Controller)
+### 1️⃣ Handler Layer (Presentation / ≈ Spring Controller)
 
 #### ✅ 올바른 예시
 
@@ -71,16 +82,16 @@ package handler
 import (
     "net/http"
     "github.com/gin-gonic/gin"
-    "your-project/internal/member/service"  // 같은 도메인의 service
+    "your-project/internal/member/usecase"  // 같은 도메인의 usecase
 )
 
 type Handler struct {
-    memberService *service.Service  // 같은 도메인 Service
+    memberUseCase *usecase.MemberUseCase  // 같은 도메인 UseCase
 }
 
-func NewHandler(memberService *service.Service) *Handler {
+func NewHandler(memberUseCase *usecase.MemberUseCase) *Handler {
     return &Handler{
-        memberService: memberService,
+        memberUseCase: memberUseCase,
     }
 }
 
@@ -95,12 +106,12 @@ func (h *Handler) Create(c *gin.Context) {
     // 2. Context 추출
     ctx := c.Request.Context()
 
-    // 3. Service 호출 (DTO → Model 변환)
-    member, err := h.memberService.Create(ctx, req.ToModel())
+    // 3. UseCase 호출 (DTO → Domain Entity 변환)
+    member, err := h.memberUseCase.Create(ctx, req.ToDomain())
     if err != nil {
         // 4. 에러 타입에 따른 HTTP 상태 코드 매핑
         switch {
-        case errors.Is(err, service.ErrEmailAlreadyExists):
+        case errors.Is(err, usecase.ErrEmailAlreadyExists):
             c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
         default:
             c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
@@ -128,7 +139,7 @@ func (h *Handler) Create(c *gin.Context) {
     }
 
     // ❌ Repository 직접 호출
-    if err := h.memberRepo.Create(req.ToModel()); err != nil {
+    if err := h.memberRepo.Create(req.ToDomain()); err != nil {
         c.JSON(500, gin.H{"error": err.Error()})
         return
     }
@@ -139,11 +150,11 @@ func (h *Handler) Create(c *gin.Context) {
 
 | 항목 | 올바른 방법 | 잘못된 방법 |
 |-----|-----------|-----------|
-| **의존성** | Service만 의존 | Repository 직접 의존 |
+| **의존성** | UseCase만 의존 | Repository 직접 의존 |
 | **Context** | `c.Request.Context()` 사용 | Context 무시 |
 | **에러 처리** | 에러 타입 구분 + HTTP 상태 매핑 | 모든 에러 500 |
 | **검증** | 형식 검증만 (JSON validation) | 비즈니스 검증 포함 |
-| **응답** | DTO 변환 후 반환 | Model 직접 반환 |
+| **응답** | DTO 변환 후 반환 | Domain Entity 직접 반환 |
 
 #### 🆚 Spring Boot vs Go
 
@@ -158,230 +169,349 @@ func (h *Handler) Create(c *gin.Context) {
 
 ---
 
-### 2️⃣ Service Layer (≈ Spring Service)
+### 2️⃣ UseCase Layer (Application / ≈ Spring Service)
 
-#### ✅ 올바른 예시
+UseCase는 **Application Logic**을 담당하며, Entity와 Repository를 조합하여 Use Case를 구현합니다.
+
+#### ✅ 올바른 예시 (Light Clean)
 
 ```go
-// internal/member/service/service.go
-package service
+// internal/member/usecase/member_usecase.go
+package usecase
 
 import (
     "context"
     "fmt"
-    "errors"
-    "golang.org/x/crypto/bcrypt"
-    "your-project/internal/model"
-    "your-project/internal/member/repository"  // 같은 도메인의 repository
+    "your-project/internal/member/domain"       // Domain
+    "your-project/internal/member/repository"   // Repository 구현체 직접 의존
 )
 
-type Service struct {
-    memberRepo repository.Repository  // 같은 도메인 Repository 인터페이스
-    // 필요시 다른 도메인 repository나 service 의존 가능 (순환 참조만 금지)
+type MemberUseCase struct {
+    memberRepo *repository.MemberRepository  // 구현체 직접 의존 (실용적)
+    // 필요시 다른 도메인 Repository 의존 가능 (UseCase 간 의존 금지)
 }
 
-func NewService(memberRepo repository.Repository) *Service {
-    return &Service{
+func NewMemberUseCase(memberRepo *repository.MemberRepository) *MemberUseCase {
+    return &MemberUseCase{
         memberRepo: memberRepo,
     }
 }
 
-func (s *Service) Create(ctx context.Context, member *model.Member) (*model.Member, error) {
-    // 1. 비즈니스 규칙 검증
-    if member.Email == "" {
-        return nil, errors.New("email is required")
+func (uc *MemberUseCase) Create(ctx context.Context, member *domain.Member) (*domain.Member, error) {
+    // 1. Domain Entity 비즈니스 로직 호출
+    if err := member.Validate(); err != nil {
+        return nil, fmt.Errorf("회원 검증 실패: %w", err)
     }
 
-    // 2. 중복 체크 (비즈니스 로직)
-    exists, err := s.memberRepo.ExistsByEmail(ctx, member.Email)
+    // 2. 중복 체크 (Application Logic)
+    exists, err := uc.memberRepo.ExistsByEmail(ctx, db, member.Email)
     if err != nil {
-        return nil, fmt.Errorf("failed to check email existence: %w", err)
+        return nil, fmt.Errorf("이메일 중복 확인 실패: %w", err)
     }
     if exists {
         return nil, ErrEmailAlreadyExists
     }
 
-    // 3. 비밀번호 해싱 (비즈니스 로직)
-    hashedPassword, err := bcrypt.GenerateFromPassword(
-        []byte(member.Password),
-        bcrypt.DefaultCost,
-    )
-    if err != nil {
-        return nil, fmt.Errorf("failed to hash password: %w", err)
+    // 3. 비밀번호 해싱 (Domain Entity 메서드 호출)
+    if err := member.HashPassword(); err != nil {
+        return nil, fmt.Errorf("비밀번호 해싱 실패: %w", err)
     }
-    member.Password = string(hashedPassword)
 
     // 4. Repository 호출
-    if err := s.memberRepo.Create(ctx, member); err != nil {
-        return nil, fmt.Errorf("failed to create member: %w", err)
+    if err := uc.memberRepo.Create(ctx, db, member); err != nil {
+        return nil, fmt.Errorf("회원 생성 실패: %w", err)
     }
 
     return member, nil
 }
 
-// 도메인 에러 정의
+// UseCase 레벨 에러 정의
 var (
     ErrEmailAlreadyExists = errors.New("email already exists")
     ErrMemberNotFound     = errors.New("member not found")
 )
 ```
 
-#### ❌ 잘못된 예시
+### 3️⃣ Domain Layer (≈ Spring Entity with Business Logic)
+
+Domain은 **비즈니스 로직 + GORM 매핑**을 담당합니다 (Light Clean에서는 실용적으로 통합).
+
+#### ✅ Domain Entity 예시 (Light Clean - GORM 태그 포함)
 
 ```go
-// ❌ HTTP 처리가 Service에 있음
-func (s *Service) Create(c *gin.Context) {  // ❌ gin.Context 사용
-    var member model.Member
-    c.ShouldBindJSON(&member)
+// internal/member/domain/member.go
+package domain
 
-    s.memberRepo.Create(&member)
+import (
+    "errors"
+    "regexp"
+    "strings"
+    "golang.org/x/crypto/bcrypt"
+)
 
-    c.JSON(200, member)  // ❌ HTTP 응답이 Service에
+// Member Entity (비즈니스 로직 + GORM 태그)
+type Member struct {
+    ID       int64  `gorm:"primaryKey;autoIncrement"`
+    Email    string `gorm:"column:email;type:VARCHAR2(255);uniqueIndex;not null"`
+    Name     string `gorm:"column:name;type:VARCHAR2(100);not null"`
+    Password string `gorm:"column:password;type:VARCHAR2(255);not null"`
+
+    // BaseEntity 임베딩 (선택적)
+    // BaseEntity
 }
 
-// ❌ SQL 쿼리가 Service에 있음
-func (s *Service) GetByEmail(email string) (*model.Member, error) {
-    var member model.Member
+// TableName - GORM 테이블명 매핑
+func (*Member) TableName() string {
+    return "member"
+}
+
+// Factory 함수 (생성자)
+func NewMember(name, email, password string) (*Member, error) {
+    member := &Member{
+        Name:     strings.TrimSpace(name),
+        Email:    strings.TrimSpace(strings.ToLower(email)),
+        Password: password,
+    }
+
+    if err := member.Validate(); err != nil {
+        return nil, err
+    }
+
+    return member, nil
+}
+
+// Validate - 비즈니스 규칙 검증
+func (m *Member) Validate() error {
+    if m.Name == "" {
+        return errors.New("이름은 필수입니다")
+    }
+    if !emailRegex.MatchString(m.Email) {
+        return errors.New("이메일 형식이 올바르지 않습니다")
+    }
+    if len(m.Password) < 8 {
+        return errors.New("비밀번호는 8자 이상이어야 합니다")
+    }
+    return nil
+}
+
+// HashPassword - 비밀번호 해싱
+func (m *Member) HashPassword() error {
+    hashedPassword, err := bcrypt.GenerateFromPassword(
+        []byte(m.Password),
+        bcrypt.DefaultCost,
+    )
+    if err != nil {
+        return err
+    }
+    m.Password = string(hashedPassword)
+    return nil
+}
+
+// CheckPassword - 비밀번호 확인
+func (m *Member) CheckPassword(password string) bool {
+    err := bcrypt.CompareHashAndPassword([]byte(m.Password), []byte(password))
+    return err == nil
+}
+
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+```
+
+**✅ Light Clean의 장점:**
+- GORM 태그와 비즈니스 로직이 함께 있어도 OK (실용적)
+- Entity 변환 로직 불필요
+- 여전히 비즈니스 로직은 Entity에 캡슐화
+- 테스트 가능 (GORM 태그는 테스트에 영향 없음)
+
+#### ❌ 잘못된 예시 (UseCase)
+
+```go
+// ❌ HTTP 처리가 UseCase에 있음
+func (uc *MemberUseCase) Create(c *gin.Context) {  // ❌ gin.Context 사용
+    var member domain.Member
+    c.ShouldBindJSON(&member)
+
+    uc.memberRepo.Create(&member)
+
+    c.JSON(200, member)  // ❌ HTTP 응답이 UseCase에
+}
+
+// ❌ SQL 쿼리가 UseCase에 있음
+func (uc *MemberUseCase) GetByEmail(ctx context.Context, email string) (*domain.Member, error) {
+    var member domain.Member
     // ❌ 직접 SQL 실행
-    s.db.Where("email = ?", email).First(&member)
+    uc.db.Where("email = ?", email).First(&member)
     return &member, nil
 }
 
 // ❌ Context 무시
-func (s *Service) Create(member *model.Member) error {  // ❌ Context 없음
-    return s.memberRepo.Create(member)  // ❌ Context 전달 안 함
+func (uc *MemberUseCase) Create(member *domain.Member) error {  // ❌ Context 없음
+    return uc.memberRepo.Create(member)  // ❌ Context 전달 안 함
+}
+```
+
+#### ❌ 잘못된 예시 (Domain)
+
+```go
+// ❌ 다른 도메인 Entity 직접 참조
+// internal/member/domain/member.go
+import "your-project/internal/room/domain"
+
+type Member struct {
+    ID    int64
+    Rooms []domain.Room  // ❌ 다른 도메인 Entity 참조 (순환 참조 위험)
+}
+
+// ❌ 외부 의존성이 Domain에 있음
+func (m *Member) Save() error {  // ❌ 저장 로직이 Entity에
+    db := getDB()
+    return db.Create(m).Error
 }
 ```
 
 #### 🔍 체크포인트
 
+**UseCase Layer:**
+
 | 항목 | 올바른 방법 | 잘못된 방법 |
 |-----|-----------|-----------|
 | **Context** | 첫 번째 파라미터 `ctx context.Context` | Context 없음 |
-| **의존성** | Repository 인터페이스 | DB 직접 접근 |
+| **의존성** | Domain의 Repository Interface | DB 직접 접근, UseCase 간 의존 |
 | **에러 처리** | `fmt.Errorf("...: %w", err)` 래핑 | `err` 그대로 반환 |
-| **트랜잭션** | Service에서 시작/관리 | Repository에서 시작 |
-| **비즈니스 로직** | Service에 집중 | Handler나 Repository에 분산 |
+| **트랜잭션** | UseCase에서 시작/관리 | Repository에서 시작 |
+| **비즈니스 로직** | Domain 호출 | UseCase에 비즈니스 로직 집중 |
 
-#### 🔗 도메인 간 의존 (Uber-style 핵심)
+**Domain Layer:**
 
-**Room Service가 Member Repository/Service를 의존하는 경우:**
+| 항목 | 올바른 방법 | 잘못된 방법 |
+|-----|-----------|-----------|
+| **Entity** | 순수 비즈니스 객체 (GORM 태그 없음) | DB 태그 포함, 외부 의존성 |
+| **메서드** | 비즈니스 로직만 (`Validate()`, `HashPassword()`) | 저장, 조회 등 인프라 로직 |
+| **의존성** | 다른 도메인 참조 금지 (ID만) | 다른 도메인 Entity 직접 참조 |
+| **Interface** | Repository Interface 정의 | 구현체 의존 |
+
+#### 🔗 도메인 간 의존 규칙 (Clean Architecture 핵심)
+
+**✅ 올바른 의존: Room UseCase가 Member Repository를 의존**
 
 ```go
-// internal/room/service/service.go
-package service
+// internal/room/usecase/room_usecase.go
+package usecase
 
 import (
     "context"
-    "your-project/internal/model"
-    roomRepo "your-project/internal/room/repository"
-    memberRepo "your-project/internal/member/repository"  // ✅ 다른 도메인 Repository
-    // 또는
-    memberService "your-project/internal/member/service"  // ✅ 다른 도메인 Service
+    "your-project/internal/room/repository"
+    memberRepo "your-project/internal/member/repository"  // ✅ 다른 도메인 (단방향)
 )
 
-type Service struct {
-    roomRepo      roomRepo.Repository
-    memberRepo    memberRepo.Repository      // ✅ 옵션 1: Repository 의존 (데이터만)
-    // 또는
-    memberService *memberService.Service     // ✅ 옵션 2: Service 의존 (로직 포함)
+type RoomUseCase struct {
+    roomRepo   *repository.RoomRepository           // 같은 도메인
+    memberRepo *memberRepo.MemberRepository         // ✅ 다른 도메인 Repository (단방향)
+    // ❌ memberUseCase는 의존하지 않음!
 }
 
-func (s *Service) AddMember(ctx context.Context, roomID, memberID int64) error {
-    // 옵션 1: Member Repository 사용 (데이터만 필요)
-    member, err := s.memberRepo.GetByID(ctx, memberID)
+func (uc *RoomUseCase) AddMember(ctx context.Context, roomID, memberID int64) error {
+    // 다른 도메인 Repository 사용 가능
+    member, err := uc.memberRepo.GetByID(ctx, db, memberID)
     if err != nil {
         return err
     }
 
-    // 옵션 2: Member Service 사용 (비즈니스 로직 필요)
-    // if err := s.memberService.ValidateForRoom(ctx, memberID); err != nil {
-    //     return err
-    // }
-
-    return s.roomRepo.AddMember(ctx, roomID, memberID)
+    return uc.roomRepo.AddMember(ctx, db, roomID, member.ID)  // ✅ ID만 전달
 }
 ```
 
-**⚠️ 주의: 순환 참조 금지**
+**✅ 올바른 Domain Entity 간 참조: ID만 사용**
+
+```go
+// internal/room/domain/member_room.go
+package domain
+
+type MemberRoom struct {
+    MemberID int64  // ✅ ID만 참조 (import 불필요)
+    RoomID   int64
+    Role     string
+}
+```
+
+**⚠️ 주의: 순환 참조 절대 금지**
 ```go
 // ❌ 절대 금지
-// internal/member/service/service.go
-type Service struct {
-    roomService *roomService.Service  // ❌
+// internal/member/usecase/member_usecase.go
+import "your-project/internal/room/usecase"
+
+type MemberUseCase struct {
+    roomUseCase *usecase.RoomUseCase  // ❌ UseCase 간 의존
 }
 
-// internal/room/service/service.go
-type Service struct {
-    memberService *memberService.Service  // ❌
+// internal/room/usecase/room_usecase.go
+import "your-project/internal/member/usecase"
+
+type RoomUseCase struct {
+    memberUseCase *usecase.MemberUseCase  // ❌ UseCase 간 의존
 }
 // → import cycle error!
 ```
 
 #### 🆚 Spring Boot vs Go
 
-| Spring Boot | Go + Gin |
+**UseCase Layer:**
+
+| Spring Boot | Go + Gin Clean Architecture |
 |-------------|----------|
-| `@Service` | `service` 패키지 |
+| `@Service` | `usecase` 패키지 |
 | `@Transactional` | 수동 트랜잭션 (`db.Transaction(...)`) |
 | Custom Exception | `var ErrXXX = errors.New("...")` |
 | `Optional<T>` | `*T, error` 반환 |
 | `@Async` | `go func() { ... }()` |
-| Service → Service 의존 | ✅ 허용 (순환 참조만 금지) |
+| Service → Service 의존 | ❌ 금지 (Repository만 의존) |
+
+**Domain Layer:**
+
+| Spring Boot | Go + Gin Clean Architecture |
+|-------------|----------|
+| `@Entity` | Domain Entity (순수 객체, GORM 태그 없음) |
+| Entity Validation | `Validate()` 메서드 |
+| Domain Service | Domain Service 패턴 (optional) |
+| Repository Interface | Domain에 Interface 정의 |
 
 ---
 
-### 3️⃣ Repository Layer (≈ Spring Repository)
+### 4️⃣ Repository Layer (Infrastructure / ≈ Spring Repository)
 
-#### ✅ 올바른 예시
+Repository는 **데이터 접근**을 담당하며, Domain Entity를 직접 사용합니다 (Light Clean - 변환 불필요).
+
+#### ✅ 올바른 예시 (Light Clean - Domain Entity 직접 사용)
 
 ```go
-// internal/member/repository/interface.go
-package repository
-
-import (
-    "context"
-    "your-project/internal/model"
-)
-
-// 인터페이스 정의 (Spring의 Repository 인터페이스와 유사)
-type Repository interface {
-    Create(ctx context.Context, member *model.Member) error
-    GetByID(ctx context.Context, id int64) (*model.Member, error)
-    GetByEmail(ctx context.Context, email string) (*model.Member, error)
-    Update(ctx context.Context, member *model.Member) error
-    Delete(ctx context.Context, id int64) error
-    ExistsByEmail(ctx context.Context, email string) (bool, error)
-}
-
-// internal/member/repository/repository.go
+// internal/member/repository/member_repository.go
 package repository
 
 import (
     "context"
     "errors"
     "gorm.io/gorm"
-    "your-project/internal/model"
+    "your-project/internal/member/domain"  // Domain 직접 사용
 )
 
-type repository struct {
-    db *gorm.DB
+// Repository 구현체
+type MemberRepository struct {
+    // DB는 UseCase에서 트랜잭션으로 전달받음
 }
 
-func NewRepository(db *gorm.DB) Repository {
-    return &repository{db: db}
+func NewMemberRepository() *MemberRepository {
+    return &MemberRepository{}
 }
 
-func (r *repository) Create(ctx context.Context, member *model.Member) error {
-    // Context 전달
-    return r.db.WithContext(ctx).Create(member).Error
+// Create - Domain Entity 직접 저장 (변환 불필요)
+func (r *MemberRepository) Create(ctx context.Context, db *gorm.DB, member *domain.Member) error {
+    return db.WithContext(ctx).Create(member).Error  // ✅ Domain Entity 직접 사용
 }
 
-func (r *repository) GetByID(ctx context.Context, id int64) (*model.Member, error) {
-    var member model.Member
-    err := r.db.WithContext(ctx).First(&member, id).Error
+// GetByID - Domain Entity 직접 조회
+func (r *MemberRepository) GetByID(ctx context.Context, db *gorm.DB, id int64) (*domain.Member, error) {
+    var member domain.Member
+    err := db.WithContext(ctx).First(&member, id).Error
 
-    // DB 에러를 도메인 에러로 변환
     if err != nil {
         if errors.Is(err, gorm.ErrRecordNotFound) {
             return nil, ErrMemberNotFound
@@ -392,25 +522,47 @@ func (r *repository) GetByID(ctx context.Context, id int64) (*model.Member, erro
     return &member, nil
 }
 
-func (r *repository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
+// GetByEmail - Domain Entity 직접 조회
+func (r *MemberRepository) GetByEmail(ctx context.Context, db *gorm.DB, email string) (*domain.Member, error) {
+    var member domain.Member
+    err := db.WithContext(ctx).Where("email = ?", email).First(&member).Error
+
+    if err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return nil, ErrMemberNotFound
+        }
+        return nil, err
+    }
+
+    return &member, nil
+}
+
+// ExistsByEmail - 존재 여부 확인
+func (r *MemberRepository) ExistsByEmail(ctx context.Context, db *gorm.DB, email string) (bool, error) {
     var count int64
-    err := r.db.WithContext(ctx).
-        Model(&model.Member{}).
+    err := db.WithContext(ctx).
+        Model(&domain.Member{}).
         Where("email = ?", email).
         Count(&count).Error
 
     return count > 0, err
 }
 
-// 도메인 에러
+// Repository 에러
 var ErrMemberNotFound = errors.New("member not found")
 ```
+
+**✅ Light Clean의 장점:**
+- Domain Entity 변환 로직 불필요 (toEntity/toDomain 제거)
+- 코드 간결
+- GORM이 Domain Entity를 직접 매핑
+- 여전히 레이어 분리 명확
 
 #### ❌ 잘못된 예시
 
 ```go
 // ❌ 비즈니스 로직이 Repository에 있음
-func (r *repository) Create(ctx context.Context, member *model.Member) error {
+func (r *memberRepository) Create(ctx context.Context, db *gorm.DB, member *domain.Member) error {
     // ❌ 비즈니스 검증이 Repository에
     if member.Age < 18 {
         return errors.New("too young")
@@ -420,166 +572,56 @@ func (r *repository) Create(ctx context.Context, member *model.Member) error {
     hashedPassword, _ := bcrypt.GenerateFromPassword(...)
     member.Password = string(hashedPassword)
 
-    return r.db.Create(member).Error
+    entity := r.toEntity(member)
+    return db.Create(&entity).Error
 }
 
 // ❌ Context 무시
-func (r *repository) GetByID(id int64) (*model.Member, error) {
-    var member model.Member
-    // ❌ WithContext 없음
-    r.db.First(&member, id)
-    return &member, nil
+func (r *memberRepository) GetByID(id int64) (*domain.Member, error) {
+    var entity memberEntity
+    // ❌ WithContext 없음, db 매개변수도 없음
+    r.db.First(&entity, id)
+    return r.toDomain(&entity), nil
 }
 
 // ❌ 트랜잭션 시작
-func (r *repository) CreateWithRoom(member *model.Member, room *model.Room) error {
-    // ❌ Repository에서 트랜잭션 시작 (Service에서 해야 함)
+func (r *memberRepository) CreateBoth(ctx context.Context, member *domain.Member, room *domain.Room) error {
+    // ❌ Repository에서 트랜잭션 시작 (UseCase에서 해야 함)
     return r.db.Transaction(func(tx *gorm.DB) error {
-        tx.Create(member)
-        tx.Create(room)
+        r.Create(ctx, tx, member)
+        r.Create(ctx, tx, room)
         return nil
     })
 }
+
+// ❌ Domain Entity를 직접 GORM에 사용
+func (r *memberRepository) Create(ctx context.Context, db *gorm.DB, member *domain.Member) error {
+    // ❌ Domain Entity를 DB에 직접 저장 (변환 없음)
+    return db.WithContext(ctx).Create(member).Error
+}
 ```
 
 #### 🔍 체크포인트
 
 | 항목 | 올바른 방법 | 잘못된 방법 |
 |-----|-----------|-----------|
-| **인터페이스** | 별도 파일로 정의 | 인터페이스 없음 |
-| **Context** | 모든 메서드에 `ctx` 전달 | Context 무시 |
-| **에러 변환** | DB 에러 → 도메인 에러 | DB 에러 그대로 반환 |
-| **책임** | 데이터 접근만 | 비즈니스 로직 포함 |
-| **트랜잭션** | 전달받은 tx 사용 | Repository에서 시작 |
+| **인터페이스** | Domain에 정의, Repository에서 구현 | 인터페이스 없음 |
+| **Context** | 모든 메서드에 `ctx`, `db` 전달 | Context 무시 |
+| **Entity 변환** | Domain ↔ DB Entity 변환 | Domain Entity 직접 사용 |
+| **에러 변환** | DB 에러 → Domain 에러 | DB 에러 그대로 반환 |
+| **책임** | 데이터 접근 + 변환만 | 비즈니스 로직 포함 |
+| **트랜잭션** | 전달받은 `db` 사용 | Repository에서 시작 |
 
 #### 🆚 Spring Boot vs Go
 
-| Spring Boot | Go + Gin |
+| Spring Boot | Go + Gin Clean Architecture |
 |-------------|----------|
-| `extends JpaRepository<T, ID>` | Interface + 구현체 분리 |
-| `findById(id)` | `GetByID(ctx, id)` |
-| `existsByEmail(email)` | `ExistsByEmail(ctx, email)` |
+| `extends JpaRepository<T, ID>` | Domain에 Interface 정의, Repository에서 구현 |
+| `findById(id)` | `GetByID(ctx, db, id)` |
+| `existsByEmail(email)` | `ExistsByEmail(ctx, db, email)` |
 | `@Query("SELECT ...")` | GORM 체이닝 |
 | `Optional<T>` | `*T, error` |
-
----
-
-### 4️⃣ Model Layer (≈ Spring Entity)
-
-#### ✅ 올바른 예시
-
-```go
-// model/member.go
-package model
-
-import (
-    "errors"
-    "regexp"
-    "strings"
-)
-
-// Entity 정의 (GORM 태그 사용)
-type Member struct {
-    ID        int64  `gorm:"primaryKey;default:MEMBER_SEQ.NEXTVAL"`
-    Email     string `gorm:"column:email;type:VARCHAR2(255);not null;uniqueIndex"`
-    Name      string `gorm:"column:name;type:VARCHAR2(100);not null"`
-    Password  string `gorm:"column:password;type:VARCHAR2(255);not null"`
-
-    BaseEntity  // 공통 필드 (CreatedAt, UpdatedAt 등)
-}
-
-// TableName 메서드 (GORM 테이블명 매핑)
-func (*Member) TableName() string {
-    return "member"
-}
-
-// Factory 메서드 (생성자 패턴)
-func NewMember(name, email, password string) (*Member, error) {
-    // 정규화
-    name = strings.TrimSpace(name)
-    email = strings.TrimSpace(strings.ToLower(email))
-
-    // 기본 검증
-    if err := validateMemberFields(name, email, password); err != nil {
-        return nil, err
-    }
-
-    return &Member{
-        Name:     name,
-        Email:    email,
-        Password: password,
-    }, nil
-}
-
-// 도메인 메서드
-func (m *Member) IsActive() bool {
-    return !m.DeletedAt.Valid
-}
-
-func (m *Member) CanLogin() bool {
-    return m.IsActive() && m.Password != ""
-}
-
-// private validation 함수
-func validateMemberFields(name, email, password string) error {
-    if name == "" {
-        return errors.New("name is required")
-    }
-    if !emailRegex.MatchString(email) {
-        return errors.New("invalid email format")
-    }
-    if len(password) < 8 {
-        return errors.New("password too short")
-    }
-    return nil
-}
-
-var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
-```
-
-#### ❌ 잘못된 예시
-
-```go
-// ❌ 비즈니스 로직이 Model에 과도하게 있음
-func (m *Member) Save() error {  // ❌ 저장 로직이 Model에
-    db := getDB()
-    return db.Create(m).Error
-}
-
-func (m *Member) SendWelcomeEmail() error {  // ❌ 외부 서비스 호출이 Model에
-    emailService.Send(m.Email, "Welcome!")
-    return nil
-}
-
-// ❌ 복잡한 비즈니스 로직이 Model에
-func (m *Member) CheckDuplicateEmail() (bool, error) {  // ❌ Repository 역할이 Model에
-    var count int64
-    db := getDB()
-    db.Model(&Member{}).Where("email = ?", m.Email).Count(&count)
-    return count > 0, nil
-}
-```
-
-#### 🔍 체크포인트
-
-| 항목 | 올바른 방법 | 잘못된 방법 |
-|-----|-----------|-----------|
-| **책임** | 데이터 구조 + 간단한 도메인 로직 | 복잡한 비즈니스 로직 |
-| **Factory** | `NewXXX()` 생성자 함수 | 직접 구조체 생성 |
-| **검증** | 기본 형식 검증만 | 복잡한 비즈니스 검증 |
-| **메서드** | 판단 메서드 (`IsXXX()`, `CanXXX()`) | 동작 메서드 (`Save()`, `Delete()`) |
-| **의존성** | 다른 Model만 참조 | Repository, Service 참조 |
-
-#### 🆚 Spring Boot vs Go
-
-| Spring Boot | Go + Gin |
-|-------------|----------|
-| `@Entity` | struct + GORM 태그 |
-| `@Table(name = "...")` | `TableName()` 메서드 |
-| `@Column(name = "...")` | `gorm:"column:..."` |
-| `@Id @GeneratedValue` | `gorm:"primaryKey;autoIncrement"` |
-| `@CreatedDate` | `gorm:"autoCreateTime"` or BaseEntity |
-| Constructor | `NewXXX()` 함수 |
+| Entity → Repository 변환 | Domain Entity ↔ DB Entity 변환 |
 
 ---
 
@@ -645,24 +687,25 @@ func Create() {
 // Handler에서 추출
 func (h *Handler) Create(c *gin.Context) {
     ctx := c.Request.Context()  // ✅ Gin Context에서 추출
-    result, err := h.service.Create(ctx, data)
+    result, err := h.useCase.Create(ctx, data)
 }
 
-// Service에서 전파
-func (s *Service) Create(ctx context.Context, data *Model) error {
+// UseCase에서 전파
+func (uc *MemberUseCase) Create(ctx context.Context, member *domain.Member) (*domain.Member, error) {
     // Context timeout/cancel 체크
     select {
     case <-ctx.Done():
-        return ctx.Err()
+        return nil, ctx.Err()
     default:
     }
 
-    return s.repo.Create(ctx, data)  // ✅ Repository로 전파
+    return uc.memberRepo.Create(ctx, db, member)  // ✅ Repository로 전파
 }
 
 // Repository에서 사용
-func (r *Repository) Create(ctx context.Context, data *Model) error {
-    return r.db.WithContext(ctx).Create(data).Error  // ✅ DB에 전달
+func (r *memberRepository) Create(ctx context.Context, db *gorm.DB, member *domain.Member) error {
+    entity := r.toEntity(member)
+    return db.WithContext(ctx).Create(&entity).Error  // ✅ DB에 전달
 }
 ```
 
@@ -670,19 +713,19 @@ func (r *Repository) Create(ctx context.Context, data *Model) error {
 
 ```go
 // ❌ Context 무시
-func (s *Service) Create(data *Model) error {
-    return s.repo.Create(data)  // ❌ Context 없음
+func (uc *MemberUseCase) Create(member *domain.Member) error {
+    return uc.memberRepo.Create(member)  // ❌ Context 없음
 }
 
 // ❌ background context 남발
-func (s *Service) Create(data *Model) error {
+func (uc *MemberUseCase) Create(member *domain.Member) error {
     ctx := context.Background()  // ❌ 요청 Context 무시
-    return s.repo.Create(ctx, data)
+    return uc.memberRepo.Create(ctx, db, member)
 }
 
-// ❌ Gin Context를 Service에 전달
+// ❌ Gin Context를 UseCase에 전달
 func (h *Handler) Create(c *gin.Context) {
-    h.service.Create(c, data)  // ❌ gin.Context 전달 (c.Request.Context() 사용해야)
+    h.useCase.Create(c, data)  // ❌ gin.Context 전달 (c.Request.Context() 사용해야)
 }
 ```
 
@@ -691,14 +734,14 @@ func (h *Handler) Create(c *gin.Context) {
 #### ✅ 올바른 Nil 체크
 
 ```go
-func (s *Service) Create(ctx context.Context, member *model.Member) (*model.Member, error) {
+func (uc *MemberUseCase) Create(ctx context.Context, member *domain.Member) (*domain.Member, error) {
     // 1. 포인터 nil 체크
     if member == nil {
         return nil, errors.New("member is nil")
     }
 
     // 2. Repository 호출 후 nil 체크
-    result, err := s.repo.GetByEmail(ctx, member.Email)
+    result, err := uc.memberRepo.GetByEmail(ctx, db, member.Email)
     if err != nil {
         return nil, err
     }
@@ -839,7 +882,7 @@ func NewHandler(memberService *service.MemberService) *Handler {
 ```go
 // ❌ 잘못됨
 func (h *Handler) GetByID(c *gin.Context) {
-    member, err := h.service.GetByID(c.Request.Context(), id)
+    member, err := h.useCase.GetByID(c.Request.Context(), id)
     if err != nil {
         c.JSON(500, gin.H{"error": err.Error()})  // ❌ 모두 500
         return
@@ -848,12 +891,12 @@ func (h *Handler) GetByID(c *gin.Context) {
 
 // ✅ 올바름
 func (h *Handler) GetByID(c *gin.Context) {
-    member, err := h.service.GetByID(c.Request.Context(), id)
+    member, err := h.useCase.GetByID(c.Request.Context(), id)
     if err != nil {
         switch {
-        case errors.Is(err, service.ErrNotFound):
+        case errors.Is(err, usecase.ErrNotFound):
             c.JSON(404, gin.H{"error": "Member not found"})
-        case errors.Is(err, service.ErrInvalidID):
+        case errors.Is(err, usecase.ErrInvalidID):
             c.JSON(400, gin.H{"error": "Invalid ID format"})
         default:
             c.JSON(500, gin.H{"error": "Internal server error"})
@@ -868,14 +911,14 @@ func (h *Handler) GetByID(c *gin.Context) {
 
 ```go
 // ❌ 잘못됨
-func (s *Service) Create(member *Member) {
+func (uc *MemberUseCase) Create(member *domain.Member) {
     if member == nil {
         panic("member is nil")  // ❌ 일반 에러에 panic
     }
 }
 
 // ✅ 올바름
-func (s *Service) Create(ctx context.Context, member *Member) error {
+func (uc *MemberUseCase) Create(ctx context.Context, member *domain.Member) error {
     if member == nil {
         return errors.New("member is nil")  // ✅ error 반환
     }
@@ -890,12 +933,12 @@ func init() {
 }
 ```
 
-### 5. ❌ ORM Model을 API Response로 직접 사용
+### 5. ❌ Domain Entity를 API Response로 직접 사용
 
 ```go
 // ❌ 잘못됨
 func (h *Handler) GetByID(c *gin.Context) {
-    member, _ := h.service.GetByID(c.Request.Context(), id)
+    member, _ := h.useCase.GetByID(c.Request.Context(), id)
     c.JSON(200, member)  // ❌ Password 같은 민감 정보 노출
 }
 
@@ -907,7 +950,7 @@ type MemberResponse struct {
     // Password 제외
 }
 
-func NewMemberResponse(m *model.Member) *MemberResponse {
+func NewMemberResponse(m *domain.Member) *MemberResponse {
     return &MemberResponse{
         ID:    m.ID,
         Email: m.Email,
@@ -916,7 +959,7 @@ func NewMemberResponse(m *model.Member) *MemberResponse {
 }
 
 func (h *Handler) GetByID(c *gin.Context) {
-    member, _ := h.service.GetByID(c.Request.Context(), id)
+    member, _ := h.useCase.GetByID(c.Request.Context(), id)
     c.JSON(200, NewMemberResponse(member))  // ✅ DTO 변환
 }
 ```
@@ -925,71 +968,79 @@ func (h *Handler) GetByID(c *gin.Context) {
 
 ## 📝 코드 리뷰 체크리스트 (요약)
 
-### 전체 구조 (도메인별 수직 분할)
+### 전체 구조 (Clean Architecture + 도메인별 수직 분할)
 
 ```
 ✅ 파일이 올바른 패키지에 위치하는가?
    - Handler → internal/{domain}/handler/      예) internal/member/handler/
-   - Service → internal/{domain}/service/      예) internal/member/service/
+   - UseCase → internal/{domain}/usecase/      예) internal/member/usecase/
+   - Domain → internal/{domain}/domain/        예) internal/member/domain/
    - Repository → internal/{domain}/repository/ 예) internal/member/repository/
-   - Model → internal/model/                    (공유 Entity)
-   - Shared → internal/shared/                  (공통 인프라: middleware, database)
+   - Shared → internal/shared/                  (공통 인프라: error, http, validator, database)
 
 ✅ 의존성 방향이 올바른가?
-   Handler → Service → Repository → Database
-   도메인 간: Member ← Room ← Prayer (단방향, 순환 참조 금지)
+   Handler → UseCase → Repository (Light Clean - 간결한 단방향)
+   도메인 간: member ← room ← prayer (단방향만 허용, 순환 참조 절대 금지)
 
-✅ Service 간 의존이 올바른가?
+✅ UseCase 간 의존이 올바른가?
    - 같은 도메인 Repository: ✅ 허용
-   - 다른 도메인 Repository: ✅ 허용 (데이터만 필요)
-   - 다른 도메인 Service: ✅ 허용 (비즈니스 로직 필요)
+   - 다른 도메인 Repository: ✅ 허용 (단방향만)
+   - 다른 도메인 UseCase: ❌ 절대 금지
    - 순환 참조: ❌ 절대 금지
+
+✅ Domain Entity 간 참조가 올바른가?
+   - ID만 참조: ✅ 허용
+   - 다른 도메인 Entity 직접 참조: ❌ 절대 금지
 
 ✅ 순환 참조가 없는가?
    import cycle 체크
 ```
 
-### Handler
+### Handler (Presentation Layer)
 
 ```
-✅ Service만 의존하는가? (Repository 직접 접근 X)
+✅ UseCase만 의존하는가? (Repository 직접 접근 X)
 ✅ c.Request.Context() 사용하는가?
 ✅ ShouldBindJSON 에러 처리가 있는가?
 ✅ 에러 타입별 HTTP 상태 코드 매핑하는가?
-✅ Response DTO로 변환하는가? (Model 직접 반환 X)
+✅ Response DTO로 변환하는가? (Domain Entity 직접 반환 X)
 ✅ 비즈니스 로직이 없는가?
 ```
 
-### Service
+### UseCase (Application Layer)
 
 ```
 ✅ 첫 번째 파라미터가 context.Context인가?
-✅ Repository 인터페이스를 의존하는가?
+✅ Domain의 Repository Interface를 의존하는가?
+✅ Domain Entity의 메서드를 호출하는가?
 ✅ 에러를 fmt.Errorf("...: %w", err)로 래핑하는가?
-✅ 비즈니스 로직이 집중되어 있는가?
+✅ Application Logic만 있는가? (Domain Logic은 Domain에)
 ✅ HTTP 관련 코드가 없는가? (gin.Context 사용 X)
 ✅ SQL 쿼리가 없는가? (Repository 사용)
+✅ 다른 도메인 UseCase를 의존하지 않는가?
 ```
 
-### Repository
+### Domain (Domain Layer)
 
 ```
-✅ 인터페이스가 정의되어 있는가?
-✅ 모든 메서드가 context.Context를 받는가?
-✅ db.WithContext(ctx) 사용하는가?
-✅ DB 에러를 도메인 에러로 변환하는가?
-✅ 비즈니스 로직이 없는가?
-✅ 트랜잭션을 시작하지 않는가? (Service에서 시작)
-```
-
-### Model
-
-```
-✅ GORM 태그가 올바른가?
-✅ TableName() 메서드가 있는가?
+✅ Domain Entity가 비즈니스 로직을 포함하는가?
 ✅ Factory 함수 (NewXXX)가 있는가?
-✅ 기본 검증만 하는가? (복잡한 비즈니스 로직 X)
-✅ 외부 의존성이 없는가? (DB, Service 호출 X)
+✅ 비즈니스 로직이 Domain Entity 메서드로 구현되어 있는가? (Validate(), HashPassword() 등)
+✅ 다른 도메인 Entity를 직접 참조하지 않는가? (ID만 참조)
+✅ GORM 태그가 있는가? (Light Clean에서는 OK)
+✅ 외부 의존성이 없는가? (HTTP, 외부 서비스 X)
+```
+
+### Repository (Infrastructure Layer)
+
+```
+✅ 구조체로 Repository를 구현하는가? (Interface는 선택적)
+✅ 모든 메서드가 context.Context, *gorm.DB를 받는가?
+✅ db.WithContext(ctx) 사용하는가?
+✅ Domain Entity를 직접 사용하는가? (Light Clean - 변환 불필요)
+✅ DB 에러를 적절히 처리하는가?
+✅ 비즈니스 로직이 없는가?
+✅ 트랜잭션을 시작하지 않는가? (UseCase에서 시작)
 ```
 
 ### Go Best Practice
@@ -1007,29 +1058,33 @@ func (h *Handler) GetByID(c *gin.Context) {
 
 ## 🎓 Spring Boot 개발자를 위한 용어 매핑
 
-| Spring Boot | Go + Gin | 설명 |
+| Spring Boot | Go + Gin Clean Architecture | 설명 |
 |-------------|----------|------|
-| `@RestController` | Handler struct | HTTP 요청 처리 |
-| `@Service` | Service struct | 비즈니스 로직 |
-| `@Repository` | Repository interface | 데이터 접근 |
-| `@Entity` | Model struct + GORM | 도메인 엔티티 |
+| `@RestController` | Handler struct (Presentation) | HTTP 요청 처리 |
+| `@Service` | UseCase struct (Application) | Application Logic |
+| Domain Service | Domain Service (Domain) | 비즈니스 로직 |
+| `@Repository` (Interface) | 선택적 Interface | Repository 인터페이스 (Light Clean에서는 선택적) |
+| `@Repository` (Impl) | Repository struct (Infrastructure) | Repository 구현체 |
+| `@Entity` | Domain Entity (GORM 태그 포함) | 도메인 엔티티 (Light Clean) |
 | `@Autowired` | Constructor DI | 의존성 주입 |
 | `@RequestBody` | `ShouldBindJSON(&req)` | Request body 파싱 |
 | `ResponseEntity<T>` | `c.JSON(status, data)` | HTTP 응답 |
-| `@Transactional` | `db.Transaction(func(tx) {...})` | 트랜잭션 |
+| `@Transactional` | `db.Transaction(func(tx) {...})` | 트랜잭션 (UseCase에서) |
 | `Optional<T>` | `*T, error` | Nullable 타입 |
 | Exception | `error` interface | 에러 처리 |
 | `throw new XXXException()` | `return errors.New("...")` | 에러 반환 |
 | `@ExceptionHandler` | Handler에서 switch/if | 에러 처리 |
-| Lombok `@Data` | struct + tags | DTO/Entity 정의 |
+| Lombok `@Data` | struct + tags | DTO 정의 |
 | `@Valid` | `ShouldBindJSON` + validation | 입력 검증 |
+| DDD Entity | Domain Entity | 비즈니스 로직 포함 |
+| Aggregate Root | Domain Entity | 도메인 루트 |
 
 ---
 
 ## 🔗 참고 자료
 
-- **프로젝트 아키텍처**: [CLAUDE.md](CLAUDE.md)
-- **상세 레이어 가이드**: [internal/README.md](internal/README.md)
+- **프로젝트 아키텍처**: [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)
+- **Clean Architecture**: https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html
 - **Uber Go Style Guide**: https://github.com/uber-go/guide
 - **Effective Go**: https://golang.org/doc/effective_go.html
 - **GORM 문서**: https://gorm.io/docs/
@@ -1046,15 +1101,17 @@ func (h *Handler) GetByID(c *gin.Context) {
 
 [리뷰 받고 싶은 파일 경로]
 1. internal/member/handler/create.go
-2. internal/member/service/service.go
-3. internal/room/service/service.go
+2. internal/member/usecase/member_usecase.go
+3. internal/member/domain/member.go
+4. internal/member/repository/member_repository.go
 
 [확인하고 싶은 사항]
-1. Uber-style 아키텍처를 잘 따르고 있나?
+1. Clean Architecture 원칙을 잘 따르고 있나?
 2. 도메인별 수직 분할 구조가 올바른가?
-3. Service 간 의존성이 적절한가? (순환 참조 없는가?)
-4. Best Practice를 준수하고 있나?
-5. Go 관용적 표현(idiomatic)을 사용하고 있나?
+3. 의존성 방향이 올바른가? (의존성 역전 적용)
+4. 순환 참조가 없는가?
+5. Best Practice를 준수하고 있나?
+6. Go 관용적 표현(idiomatic)을 사용하고 있나?
 ```
 
 ---
