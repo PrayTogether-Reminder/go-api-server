@@ -19,10 +19,10 @@ func setupFetchRoomMembersTestEnvironment(t *testing.T) (*RoomHandler, *gorm.DB,
 	// Create repositories
 	roomRepo := NewRoomRepository()
 	memberRoomRepo := NewMemberRoomRepository()
-	memberRepo := testutil.NewMemberRepository()
+	memberRepo := testutil.NewMemberRepository(db)
 
 	// Create member service for validation
-	memberService := testutil.NewMemberService(db, memberRepo)
+	memberService := testutil.NewMemberService(memberRepo)
 
 	// Create room service and handler
 	roomService := NewRoomService(db, roomRepo, memberRoomRepo, memberService)
