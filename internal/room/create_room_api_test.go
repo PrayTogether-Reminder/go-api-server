@@ -36,8 +36,9 @@ func setupTestEnvironment(t *testing.T) (*room.RoomHandler, *gorm.DB, int64) {
 	memberRepo := testutil.NewMemberRepository(db)
 	memberService := testutil.NewMemberService(memberRepo)
 
-	roomService := room.NewRoomService(db, roomRepo, memberRoomRepo, memberService)
-	roomHandler := room.NewRoomHandler(roomService)
+	roomService := room.NewRoomService(roomRepo, memberRoomRepo, memberService)
+	roomUseCase := room.NewRoomUseCase(db, roomService)
+	roomHandler := room.NewRoomHandler(roomUseCase)
 
 	return roomHandler, db, int64(testMember.ID)
 }
