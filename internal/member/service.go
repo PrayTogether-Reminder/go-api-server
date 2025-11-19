@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 
 	"gorm.io/gorm"
 )
@@ -22,7 +23,7 @@ func NewMemberService(memberRepository *MemberRepository) *MemberService {
 }
 
 // GetByID - ID로 회원 조회
-func (s *MemberService) GetByID(ctx context.Context, db *gorm.DB, memberID int64) (*Member, error) {
+func (s *MemberService) GetByID(ctx context.Context, db *gorm.DB, memberID int64) (*model.Member, error) {
 	member, err := s.memberRepository.FindByID(ctx, db, memberID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -35,7 +36,7 @@ func (s *MemberService) GetByID(ctx context.Context, db *gorm.DB, memberID int64
 }
 
 // GetByEmail - 이메일로 회원 조회
-func (s *MemberService) GetByEmail(ctx context.Context, db *gorm.DB, email string) (*Member, error) {
+func (s *MemberService) GetByEmail(ctx context.Context, db *gorm.DB, email string) (*model.Member, error) {
 	member, err := s.memberRepository.FindByEmail(ctx, db, email)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -73,7 +74,7 @@ func (s *MemberService) ValidateMemberExists(ctx context.Context, db *gorm.DB, m
 }
 
 // CreateMember - 회원 생성
-func (s *MemberService) CreateMember(ctx context.Context, db *gorm.DB, member *Member) error {
+func (s *MemberService) CreateMember(ctx context.Context, db *gorm.DB, member *model.Member) error {
 	// 이메일 중복 확인 (도메인 규칙)
 	exists, err := s.ExistsByEmail(ctx, db, member.Email)
 	if err != nil {

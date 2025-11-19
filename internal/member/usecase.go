@@ -2,6 +2,7 @@ package member
 
 import (
 	"context"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 
 	"gorm.io/gorm"
 )
@@ -20,16 +21,16 @@ func NewMemberUseCase(db *gorm.DB, memberService *MemberService) *MemberUseCase 
 }
 
 // GetProfile - 내 프로필 조회 유스케이스
-func (u *MemberUseCase) GetProfile(ctx context.Context, memberID int64) (*Member, error) {
+func (u *MemberUseCase) GetProfile(ctx context.Context, memberID int64) (*model.Member, error) {
 	return u.memberService.GetByID(ctx, u.db, memberID)
 }
 
 // GetMemberByEmail - 이메일로 회원 찾기 유스케이스 (로그인 등에서 사용)
-func (u *MemberUseCase) GetMemberByEmail(ctx context.Context, email string) (*Member, error) {
+func (u *MemberUseCase) GetMemberByEmail(ctx context.Context, email string) (*model.Member, error) {
 	return u.memberService.GetByEmail(ctx, u.db, email)
 }
 
 // Signup - 신규 회원 가입 유스케이스
-func (u *MemberUseCase) Signup(ctx context.Context, member *Member) error {
+func (u *MemberUseCase) Signup(ctx context.Context, member *model.Member) error {
 	return u.memberService.CreateMember(ctx, u.db, member)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"strconv"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
@@ -75,7 +76,7 @@ func (a *AuthService) Signup(ctx context.Context, request *SignupRequest) error 
 		}
 
 		// 회원 생성 (Domain Service 사용 - 중복 체크 포함)
-		newMember := member.NewMember(request.Name, request.Email, request.PhoneNumber, string(hashedPassword))
+		newMember := model.NewMember(request.Name, request.Email, request.PhoneNumber, string(hashedPassword))
 		if err := a.memberService.CreateMember(ctx, tx, newMember); err != nil {
 			return fmt.Errorf("회원 계정 생성 실패: %w", err)
 		}
