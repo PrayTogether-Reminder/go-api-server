@@ -33,12 +33,13 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	memberUseCase := member.NewMemberUseCase(db.DB, memberService)
 	authService := auth.NewAuthService(memberService, tokenManager)
 	authUseCase := auth.NewAuthUseCase(db.DB, authService)
-	roomService := room.NewRoomService(db.DB, roomRepository, memberRoomRepository, memberService)
+	roomService := room.NewRoomService(roomRepository, memberRoomRepository, memberService)
+	roomUseCase := room.NewRoomUseCase(db.DB, roomService)
 
 	// handler
 	authHandler := auth.NewAuthHandler(authUseCase)
 	memberHandlerInstance := member.NewHandler(memberUseCase)
-	roomHandler := room.NewRoomHandler(roomService)
+	roomHandler := room.NewRoomHandler(roomUseCase)
 
 	// API v1 routes
 	authV1 := router.Group("/api/v1/auth")
