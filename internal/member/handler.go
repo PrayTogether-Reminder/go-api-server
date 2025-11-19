@@ -1,28 +1,34 @@
 package member
 
 import (
+	"net/http"
+
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
 	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"github.com/gin-gonic/gin"
 )
 
-type MemberHandler struct {
-	memberService *MemberService
+// Handler - Member Handler 구조체
+type Handler struct {
+	memberUseCase *MemberUseCase
 }
 
-func NewMemberHandler(memberService *MemberService) *MemberHandler {
-	return &MemberHandler{
-		memberService: memberService,
+// NewHandler - Handler 생성자
+func NewHandler(memberUseCase *MemberUseCase) *Handler {
+	return &Handler{
+		memberUseCase: memberUseCase,
 	}
 }
 
-func (h *MemberHandler) GetProfile(c *gin.Context) {
-	MemberID, ok := sharedHttp.RequireMemberID(c)
+// FetchProfile - 회원 프로필 조회 API
+func (h *Handler) FetchProfile(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
 
-	response, err := h.memberService.GetProfile(c.Request.Context(), MemberID)
+	// UseCase를 통해 조회
+	member, err := h.memberUseCase.GetProfile(c.Request.Context(), memberID)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
 			sharedHttp.RespondError(c, err, resp)
@@ -33,5 +39,11 @@ func (h *MemberHandler) GetProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, response)
+	response := &FetchProfileResponse{
+		ID:          memberID,
+		Name:        member.Name,
+		Email:       member.Email,
+		PhoneNumber: member.PhoneNumber,
+	}
+	c.JSON(http.StatusOK, response)
 }

@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/token"
@@ -16,44 +15,44 @@ import (
 )
 
 type AuthService struct {
-	db               *gorm.DB
-	memberRepository *member.MemberRepository
-	tokenManager     token.Manager
+	db            *gorm.DB
+	memberService *member.MemberService
+	tokenManager  token.Manager
 }
 
-func NewAuthService(db *gorm.DB, memberRepository *member.MemberRepository, tokenManager token.Manager) *AuthService {
+func NewAuthService(db *gorm.DB, memberService *member.MemberService, tokenManager token.Manager) *AuthService {
 	return &AuthService{
-		db:               db,
-		memberRepository: memberRepository,
-		tokenManager:     tokenManager,
+		db:            db,
+		memberService: memberService,
+		tokenManager:  tokenManager,
 	}
 }
 
 func (a *AuthService) Login(ctx context.Context, request *LoginRequest) (*LoginResponse, error) {
 	log := logger.FromContext(ctx)
 
-	// 1. Find member by email
-	member, err := a.memberRepository.FindByEmail(ctx, a.db, request.Email)
+	// 1. Find member by email (Domain Service 사용)
+	foundMember, err := a.memberService.GetByEmail(ctx, a.db, request.Email)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, member.ErrMemberNotFound) {
 			return nil, fmt.Errorf("이메일을 찾을 수 없습니다: email=%s %w", logger.MaskEmail(request.Email), ErrInCorrectEmailPassword) // Security: don't reveal if email exists
 		}
 		return nil, fmt.Errorf("로그인 실패: email=%s %w", logger.MaskEmail(request.Email), err)
 	}
 
 	// 2. Validate password
-	if err := bcrypt.CompareHashAndPassword([]byte(member.Password), []byte(request.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(foundMember.Password), []byte(request.Password)); err != nil {
 		return nil, fmt.Errorf("로그인 실패: email=%s %w", logger.MaskEmail(request.Email), ErrInCorrectEmailPassword)
 	}
 
 	// 3. Generate JWT tokens
-	memberID := strconv.FormatInt(member.ID, 10)
-	accessToken, err := a.tokenManager.GenerateAccessToken(memberID, member.Email)
+	memberID := strconv.FormatInt(foundMember.ID, 10)
+	accessToken, err := a.tokenManager.GenerateAccessToken(memberID, foundMember.Email)
 	if err != nil {
 		return nil, fmt.Errorf("AccessToken 생성 실패: memberID=%s %w", memberID, err)
 	}
 
-	refreshToken, err := a.tokenManager.GenerateRefreshToken(memberID, member.Email)
+	refreshToken, err := a.tokenManager.GenerateRefreshToken(memberID, foundMember.Email)
 	if err != nil {
 		return nil, fmt.Errorf("RefreshToken 생성 실패: memberID=%s %w", memberID, err)
 	}
@@ -69,21 +68,15 @@ func (a *AuthService) Login(ctx context.Context, request *LoginRequest) (*LoginR
 func (a *AuthService) Signup(ctx context.Context, request *SignupRequest) error {
 	log := logger.FromContext(ctx)
 	return database.WithTransaction(ctx, a.db, func(tx *gorm.DB) error {
-		exists, err := a.memberRepository.IsExistByEmail(ctx, tx, request.Email)
-		if err != nil {
-			return fmt.Errorf("회원 존재 확인 오류: email=%s %w", logger.MaskEmail(request.Email), err)
-		}
-		if exists {
-			return fmt.Errorf("이미 존재하는 회원입니다: email=%s %w", logger.MaskEmail(request.Email), member.ErrMemberAlreadyExists)
-		}
-
+		// 비밀번호 해싱
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
 		if err != nil {
 			return fmt.Errorf("비밀번호 해싱 실패: %w", err)
 		}
 
-		member := model.NewMember(request.Name, request.Email, request.PhoneNumber, string(hashedPassword))
-		if err := a.memberRepository.Create(ctx, tx, member); err != nil {
+		// 회원 생성 (Domain Service 사용 - 중복 체크 포함)
+		newMember := member.NewMember(request.Name, request.Email, request.PhoneNumber, string(hashedPassword))
+		if err := a.memberService.CreateMember(ctx, tx, newMember); err != nil {
 			return fmt.Errorf("회원 계정 생성 실패: %w", err)
 		}
 
