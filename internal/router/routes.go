@@ -57,7 +57,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	roomV1 := router.Group("/api/v1/rooms")
 	roomV1.Use(middleware.JWT(cfg))
 	{
-		roomV1.GET("", roomHandler.GetRoomsByInfiniteScroll)
+		roomV1.GET("", roomHandler.FetchRoomsByInfiniteScroll)
 		roomV1.POST("", roomHandler.CreateRoom)
 		roomV1.DELETE("/:roomId", roomHandler.DeleteMemberRoom)
 		roomV1.GET("/:roomId/members", roomHandler.FetchRoomMembers)
