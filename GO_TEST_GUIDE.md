@@ -115,10 +115,12 @@ internal/
 │   └── service.go
 └── shared/
     └── testutil/               # 공통 테스트 유틸리티
-        ├── database.go         # DB 헬퍼
-        ├── router.go           # HTTP 테스트 헬퍼
+        ├── database.go         # DB 헬퍼 (SetupTestDB, CleanupTestDB, TruncateTable)
+        ├── router.go           # HTTP 테스트 헬퍼 (SetupTestRouter, SetupAuthenticatedRouter, ExecuteRequest)
         ├── token.go            # Mock 토큰 매니저
-        └── config.go           # 테스트용 설정
+        ├── config.go           # 테스트용 설정 (NewTestConfig)
+        ├── member.go           # Member 테스트 헬퍼 (CreateTestMember, NewMemberRepository 등)
+        └── room.go             # Room 테스트 헬퍼 (CreateTestRoom, CreateTestRooms, AddMembersToRoom)
 ```
 
 ### 3.2 테스트 함수 구조
@@ -169,7 +171,7 @@ func setupTestEnvironment(t *testing.T) (*auth.AuthHandler, *testutil.MockTokenM
     })
 
     // 🏗️ 3. 의존성 생성
-    memberRepo := member.NewMemberRepository()
+    memberRepo := testutil.NewMemberRepository(db)  // ← db를 파라미터로 전달
     mockTokenManager := testutil.NewMockTokenManager()
     authService := auth.NewAuthService(db, memberRepo, mockTokenManager)
     authHandler := auth.NewAuthHandler(authService)
@@ -187,16 +189,16 @@ TestSignup_Success 시작
   │     │
   │     ├─► testutil.SetupTestDB(t)
   │     │     └─► gorm.Open(sqlite.Open(":memory:"))
-  │     │           └─► db.AutoMigrate(&model.Member{})
-  │     │                 └─► CREATE TABLE member (...) 실행
+  │     │           └─► db.AutoMigrate(&model.MemberRoom{}, &model.Room{}, &model.Member{})
+  │     │                 └─► CREATE TABLE member_room (...), CREATE TABLE room (...), CREATE TABLE member (...) 실행
   │     │
   │     ├─► t.Cleanup() 등록
   │     │     └─► [나중에 실행될 함수 예약]
   │     │
-  │     ├─► NewMemberRepository() 생성
-  │     ├─► NewMockTokenManager() 생성
-  │     ├─► NewAuthService() 생성
-  │     └─► NewAuthHandler() 생성
+  │     ├─► testutil.NewMemberRepository(db) 생성
+  │     ├─► testutil.NewMockTokenManager() 생성
+  │     ├─► auth.NewAuthService(db, memberRepo, mockTokenManager) 생성
+  │     └─► auth.NewAuthHandler(service) 생성
   │
   └─► authHandler 반환
 ```
@@ -230,6 +232,66 @@ testutil.SetupTestRouter() 호출
         └─► 빈 라우터 (미들웨어 없음)
 ```
 
+### 4.2.1 `testutil.SetupAuthenticatedRouter()` - 인증된 라우터 생성
+
+```go
+// SetupAuthenticatedRouter creates a test router with memberID set in context
+// This simulates the RESULT of JWT middleware (memberID in context) without actual token validation.
+func SetupAuthenticatedRouter(memberID int64) *gin.Engine {
+    router := SetupTestRouter()
+
+    // Simulate the result of JWT middleware: memberID in context as string
+    memberIDStr := strconv.FormatInt(int64(memberID), 10)
+    router.Use(func(c *gin.Context) {
+        c.Set(sharedHttp.MemberIDKey, memberIDStr)
+        c.Next()
+    })
+
+    return router
+}
+```
+
+**사용 예시:**
+
+```go
+// 인증이 필요한 엔드포인트 테스트
+func TestGetMyProfile(t *testing.T) {
+    db := testutil.SetupTestDB(t)
+    member := testutil.CreateTestMember(t, db)
+
+    // memberID가 context에 설정된 라우터
+    router := testutil.SetupAuthenticatedRouter(member.ID)
+    router.GET("/api/v1/me", handler.GetMyProfile)
+
+    // JWT 토큰 없이도 인증된 요청처럼 동작
+    recorder := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+        Method: http.MethodGet,
+        URL:    "/api/v1/me",
+    })
+
+    assert.Equal(t, http.StatusOK, recorder.Code)
+}
+```
+
+**실행 흐름:**
+
+```
+testutil.SetupAuthenticatedRouter(memberID) 호출
+  │
+  ├─► SetupTestRouter() 호출
+  │     └─► 기본 라우터 생성
+  │
+  ├─► router.Use(middleware) 등록
+  │     └─► 모든 요청에 대해 context에 memberID 설정
+  │           c.Set(sharedHttp.MemberIDKey, "1")
+  │
+  └─► 인증 미들웨어가 적용된 라우터 반환
+
+실제 요청 시:
+  Request → Mock Middleware (memberID 설정) → Handler
+  (JWT 검증 없이 바로 memberID가 context에 주입됨)
+```
+
 ### 4.3 라우트 등록
 
 ```go
@@ -248,6 +310,14 @@ router.POST() 호출
 ### 4.4 `testutil.ExecuteRequest()` - HTTP 요청 시뮬레이션
 
 ```go
+// TestRequest 구조체 정의
+type TestRequest struct {
+    Method      string
+    URL         string
+    Body        interface{}
+    AccessToken string // Optional JWT token for authenticated requests
+}
+
 func ExecuteRequest(t *testing.T, router *gin.Engine, req TestRequest) *httptest.ResponseRecorder {
     t.Helper()
 
@@ -262,10 +332,15 @@ func ExecuteRequest(t *testing.T, router *gin.Engine, req TestRequest) *httptest
     httpReq := httptest.NewRequest(req.Method, req.URL, bodyReader)
     httpReq.Header.Set("Content-Type", "application/json")
 
-    // 3️⃣ 응답을 기록할 Recorder 생성
+    // 3️⃣ JWT 토큰이 있으면 헤더에 추가
+    if req.AccessToken != "" {
+        httpReq.Header.Set("Authorization", "Bearer "+req.AccessToken)
+    }
+
+    // 4️⃣ 응답을 기록할 Recorder 생성
     recorder := httptest.NewRecorder()
 
-    // 4️⃣ 실제 HTTP 요청 실행 (라우터에게 전달)
+    // 5️⃣ 실제 HTTP 요청 실행 (라우터에게 전달)
     router.ServeHTTP(recorder, httpReq)
 
     return recorder
@@ -854,7 +929,181 @@ func TestWithCleanup(t *testing.T) {
 
 ---
 
-## 11. 참고 자료
+## 11. testutil 헬퍼 함수 상세 가이드
+
+### 11.1 Member 테스트 헬퍼 (testutil/member.go)
+
+#### CreateTestMember - 기본 테스트 회원 생성
+
+```go
+func CreateTestMember(t *testing.T, db *gorm.DB) *model.Member {
+    t.Helper()
+    return CreateTestMemberWithIndex(t, db, 0)
+}
+```
+
+**사용 예시:**
+
+```go
+func TestSomething(t *testing.T) {
+    db := testutil.SetupTestDB(t)
+    member := testutil.CreateTestMember(t, db)
+    // member.Email = "test@example.com"
+    // member.Name = "Test_User_"
+    // member.PhoneNumber = "010-1234-5678"
+    // Password: "password123" (bcrypt 해싱됨)
+}
+```
+
+#### CreateTestMemberWithIndex - 인덱스로 여러 회원 생성
+
+```go
+func CreateTestMemberWithIndex(t *testing.T, db *gorm.DB, index int) *model.Member
+```
+
+**사용 예시:**
+
+```go
+func TestMultipleMembers(t *testing.T) {
+    db := testutil.SetupTestDB(t)
+
+    member1 := testutil.CreateTestMemberWithIndex(t, db, 0)
+    // Email: "test@example.com"
+
+    member2 := testutil.CreateTestMemberWithIndex(t, db, 1)
+    // Email: "test1@example.com"
+    // Name: "Test_User_1"
+    // PhoneNumber: "010-1234-5679"
+
+    member3 := testutil.CreateTestMemberWithIndex(t, db, 2)
+    // Email: "test2@example.com"
+}
+```
+
+#### NewMemberRepository, NewMemberService, NewMemberUseCase
+
+```go
+// 의존성 생성 헬퍼들
+memberRepo := testutil.NewMemberRepository(db)
+memberService := testutil.NewMemberService(memberRepo)
+memberUseCase := testutil.NewMemberUseCase(db, memberService)
+```
+
+### 11.2 Room 테스트 헬퍼 (testutil/room.go)
+
+#### CreateTestRoom - 단일 방 생성
+
+```go
+func CreateTestRoom(t *testing.T, db *gorm.DB, memberID int64, name, description string) *model.Room
+```
+
+**사용 예시:**
+
+```go
+func TestRoomCreation(t *testing.T) {
+    db := testutil.SetupTestDB(t)
+    member := testutil.CreateTestMember(t, db)
+
+    room := testutil.CreateTestRoom(t, db, member.ID, "My Room", "Test room description")
+    // room이 생성되고, member가 OWNER로 자동 추가됨
+}
+```
+
+#### CreateTestRooms - 페이지네이션 테스트용 여러 방 생성
+
+```go
+func CreateTestRooms(t *testing.T, db *gorm.DB, memberID int64, count int)
+```
+
+**특징:**
+- 방들이 시간 순서대로 생성됨 (커서 기반 페이지네이션 테스트용)
+- 각 방의 CreatedAt이 1초씩 차이남
+
+**사용 예시:**
+
+```go
+func TestInfiniteScroll(t *testing.T) {
+    db := testutil.SetupTestDB(t)
+    member := testutil.CreateTestMember(t, db)
+
+    // 15개의 방 생성 (페이지네이션 테스트용)
+    testutil.CreateTestRooms(t, db, member.ID, 15)
+
+    // 첫 페이지 조회 (10개)
+    // 두 번째 페이지 조회 (5개)
+}
+```
+
+#### AddMembersToRoom - 방에 여러 회원 추가
+
+```go
+func AddMembersToRoom(t *testing.T, db *gorm.DB, roomID int64, count int) []*model.Member
+```
+
+**사용 예시:**
+
+```go
+func TestRoomMembers(t *testing.T) {
+    db := testutil.SetupTestDB(t)
+    owner := testutil.CreateTestMember(t, db)
+    room := testutil.CreateTestRoom(t, db, owner.ID, "Team Room", "Description")
+
+    // 방에 5명의 멤버 추가 (MEMBER 역할)
+    members := testutil.AddMembersToRoom(t, db, room.ID, 5)
+    // 총 6명 (owner 1명 + members 5명)
+
+    assert.Len(t, members, 5)
+}
+```
+
+### 11.3 Database 헬퍼 (testutil/database.go)
+
+#### TruncateTable - 테스트 간 데이터 격리
+
+```go
+func TruncateTable(t *testing.T, db *gorm.DB, tableName string)
+```
+
+**사용 예시:**
+
+```go
+func TestWithIsolation(t *testing.T) {
+    db := testutil.SetupTestDB(t)
+
+    // 첫 번째 테스트
+    testutil.CreateTestMember(t, db)
+    testutil.TruncateTable(t, db, "member")
+
+    // 두 번째 테스트 (깨끗한 상태)
+    var count int64
+    db.Model(&model.Member{}).Count(&count)
+    assert.Equal(t, int64(0), count)
+}
+```
+
+### 11.4 Config 헬퍼 (testutil/config.go)
+
+#### NewTestConfig - 테스트용 설정 생성
+
+```go
+func NewTestConfig() *config.Config
+```
+
+**사용 예시:**
+
+```go
+func TestWithConfig(t *testing.T) {
+    cfg := testutil.NewTestConfig()
+    // cfg.JWT.Secret = "test-jwt-secret-key-must-be-at-least-32-characters-long"
+    // cfg.App.Env = "test"
+
+    tokenManager := token.NewJWTManager(cfg)
+}
+```
+
+---
+
+## 12. 참고 자료
 
 - [Go Testing Package 공식 문서](https://pkg.go.dev/testing)
 - [Go Wiki: TableDrivenTests](https://go.dev/wiki/TableDrivenTests)
