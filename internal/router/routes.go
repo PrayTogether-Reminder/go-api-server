@@ -38,7 +38,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 
 	// handler
 	authHandler := auth.NewAuthHandler(authUseCase)
-	memberHandlerInstance := member.NewHandler(memberUseCase)
+	memberHandlerInstance := member.NewMemberHandler(memberUseCase)
 	roomHandler := room.NewRoomHandler(roomUseCase)
 
 	// API v1 routes

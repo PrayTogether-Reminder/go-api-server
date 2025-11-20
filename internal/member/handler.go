@@ -8,20 +8,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Handler - Member Handler 구조체
-type Handler struct {
+// MemberHandler - Member MemberHandler 구조체
+type MemberHandler struct {
 	memberUseCase *MemberUseCase
 }
 
-// NewHandler - Handler 생성자
-func NewHandler(memberUseCase *MemberUseCase) *Handler {
-	return &Handler{
+// NewMemberHandler - MemberHandler 생성자
+func NewMemberHandler(memberUseCase *MemberUseCase) *MemberHandler {
+	return &MemberHandler{
 		memberUseCase: memberUseCase,
 	}
 }
 
 // FetchProfile - 회원 프로필 조회 API
-func (h *Handler) FetchProfile(c *gin.Context) {
+func (h *MemberHandler) FetchProfile(c *gin.Context) {
 	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
