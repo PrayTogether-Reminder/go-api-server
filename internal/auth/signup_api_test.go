@@ -26,8 +26,8 @@ func setupTestEnvironment(t *testing.T) (*auth.AuthHandler, *testutil.MockTokenM
 	memberRepo := member.NewMemberRepository(db)
 	memberService := testutil.NewMemberService(memberRepo)
 	mockTokenManager := testutil.NewMockTokenManager()
-	authService := auth.NewAuthService(memberService, mockTokenManager)
-	authUseCase := auth.NewAuthUseCase(db, authService)
+	authService := auth.NewAuthService()
+	authUseCase := auth.NewAuthUseCase(db, memberService, mockTokenManager, authService)
 	authHandler := auth.NewAuthHandler(authUseCase)
 
 	return authHandler, mockTokenManager
