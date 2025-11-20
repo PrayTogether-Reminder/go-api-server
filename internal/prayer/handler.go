@@ -17,7 +17,7 @@ func NewPrayerHandler(prayerUseCase *PrayerUseCase) *PrayerHandler {
 	}
 }
 
-func (h *PrayerHandler) Handle(c *gin.Context) {
+func (h *PrayerHandler) CreatePrayerTitle(c *gin.Context) {
 	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return

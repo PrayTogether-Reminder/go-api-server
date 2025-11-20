@@ -5,6 +5,7 @@ import (
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/meta"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/prayer"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/room"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/middleware"
@@ -19,9 +20,10 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	router.GET("/health", metaHandler.Health)
 
 	// repository
-	memberRepo := member.NewMemberRepository(db.DB)
+	memberRepo := member.NewMemberRepository()
 	roomRepository := room.NewRoomRepository()
 	memberRoomRepository := room.NewMemberRoomRepository()
+	prayerRepository := prayer.NewPrayerRepository()
 
 	// shared services
 	tokenManager := token.NewJWTManager(cfg)
@@ -29,17 +31,20 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	// service
 	memberService := member.NewMemberService(memberRepo)
 	authService := auth.NewAuthService()
+	roomService := room.NewRoomService(roomRepository, memberRoomRepository, memberService)
+	prayerService := prayer.NewPrayerService(prayerRepository)
 
 	// usecase
 	memberUseCase := member.NewMemberUseCase(db.DB, memberService)
 	authUseCase := auth.NewAuthUseCase(db.DB, memberService, tokenManager, authService)
-	roomService := room.NewRoomService(roomRepository, memberRoomRepository, memberService)
 	roomUseCase := room.NewRoomUseCase(db.DB, roomService)
+	prayerUseCase := prayer.NewPrayerUseCase(db.DB, prayerService, roomService, memberService)
 
 	// handler
 	authHandler := auth.NewAuthHandler(authUseCase)
-	memberHandlerInstance := member.NewMemberHandler(memberUseCase)
+	memberHandler := member.NewMemberHandler(memberUseCase)
 	roomHandler := room.NewRoomHandler(roomUseCase)
+	prayerHandler := prayer.NewPrayerHandler(prayerUseCase)
 
 	// API v1 routes
 	authV1 := router.Group("/api/v1/auth")
@@ -51,7 +56,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	memberV1 := router.Group("/api/v1/members")
 	memberV1.Use(middleware.JWT(cfg))
 	{
-		memberV1.GET("/me", memberHandlerInstance.FetchProfile)
+		memberV1.GET("/me", memberHandler.FetchProfile)
 	}
 
 	roomV1 := router.Group("/api/v1/rooms")
@@ -62,5 +67,11 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 		roomV1.DELETE("/:roomId", roomHandler.DeleteMemberRoom)
 		roomV1.GET("/:roomId/members", roomHandler.FetchRoomMembers)
 
+	}
+
+	prayerV1 := router.Group("/api/v1/prayers")
+	prayerV1.Use(middleware.JWT(cfg))
+	{
+		prayerV1.POST("", prayerHandler.CreatePrayerTitle)
 	}
 }

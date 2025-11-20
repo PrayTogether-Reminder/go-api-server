@@ -9,14 +9,11 @@ import (
 
 // MemberRepository - Member 데이터 접근 계층
 type MemberRepository struct {
-	db *gorm.DB
 }
 
 // NewMemberRepository - MemberRepository 생성자
-func NewMemberRepository(db *gorm.DB) *MemberRepository {
-	return &MemberRepository{
-		db: db,
-	}
+func NewMemberRepository() *MemberRepository {
+	return &MemberRepository{}
 }
 
 // IsExistByEmail - 이메일 존재 여부 확인
