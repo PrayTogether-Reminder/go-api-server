@@ -86,6 +86,15 @@ func (r *RoomRepository) Create(ctx context.Context, db *gorm.DB, room *model.Ro
 	return db.WithContext(ctx).Create(room).Error
 }
 
+func (r *RoomRepository) FindByID(ctx context.Context, db *gorm.DB, roomID int64) (*model.Room, error) {
+	var room model.Room
+	err := db.WithContext(ctx).Model(&model.Room{}).Where("id = ?", roomID).Find(&room).Error
+	if err != nil {
+		return nil, err
+	}
+	return &room, nil
+}
+
 // -------------------------------------------------
 
 type MemberCount struct {

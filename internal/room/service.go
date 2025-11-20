@@ -2,6 +2,7 @@ package room
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -175,4 +176,15 @@ func (s *RoomService) ValidateMemberExistInRoom(ctx context.Context, tx *gorm.DB
 		return ErrMemberRoomNotFound
 	}
 	return nil
+}
+
+func (s *RoomService) GetRoomByID(ctx context.Context, tx *gorm.DB, roomID int64) (*model.Room, error) {
+	room, err := s.roomRepository.FindByID(ctx, tx, roomID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("방을 찾을 수 없습니다: roomID=%d %w", roomID, err)
+		}
+		return nil, fmt.Errorf("방 조회 실패: %w", err)
+	}
+	return room, nil
 }
