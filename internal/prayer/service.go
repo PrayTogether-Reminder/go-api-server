@@ -22,7 +22,7 @@ func (s *PrayerService) CreatePrayerTitle(ctx context.Context, tx *gorm.DB, room
 
 	// Repository로 저장
 	if err := s.prayerRepository.Create(ctx, tx, prayerTitle); err != nil {
-		return nil, fmt.Errorf("기도제목 생성 실패: %w", err)
+		return nil, fmt.Errorf("기도제목 생성 실패: title=%s %s %w", title, ErrPrayerTitleCreateFailed, err)
 	}
 
 	return prayerTitle, nil
