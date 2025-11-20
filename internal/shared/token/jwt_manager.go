@@ -2,16 +2,11 @@ package token
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"github.com/golang-jwt/jwt/v5"
-)
-
-var (
-	ErrInvalidToken  = errors.New("token: invalid token")
-	ErrExpiredToken  = errors.New("token: expired token")
-	ErrInvalidClaims = errors.New("token: invalid claims")
 )
 
 const (
@@ -68,7 +63,11 @@ func (m *JWTManager) GenerateAccessToken(memberID, email string) (string, error)
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(m.secret)
+	signedToken, err := token.SignedString(m.secret)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrGenerateAccessToken, err)
+	}
+	return signedToken, nil
 }
 
 func (m *JWTManager) GenerateRefreshToken(memberID string, email string) (string, error) {
@@ -90,7 +89,11 @@ func (m *JWTManager) GenerateRefreshToken(memberID string, email string) (string
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(m.secret)
+	signedToken, err := token.SignedString(m.secret)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrGenerateRefreshToken, err)
+	}
+	return signedToken, nil
 }
 
 func (m *JWTManager) ValidateToken(tokenString string) (*Claims, error) {
@@ -101,9 +104,9 @@ func (m *JWTManager) ValidateToken(tokenString string) (*Claims, error) {
 	})
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			return nil, ErrExpiredToken
+			return nil, fmt.Errorf("%w: %v", ErrExpiredToken, err)
 		}
-		return nil, ErrInvalidToken
+		return nil, fmt.Errorf("%w: %v", ErrInvalidToken, err)
 	}
 
 	claims, ok := token.Claims.(*Claims)

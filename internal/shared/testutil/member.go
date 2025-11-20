@@ -2,11 +2,11 @@ package testutil
 
 import (
 	"fmt"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"strconv"
 	"testing"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -39,26 +39,31 @@ func CreateTestMemberWithIndex(t *testing.T, db *gorm.DB, index int) *model.Memb
 		suffix = strconv.Itoa(index)
 	}
 
-	member := &model.Member{
+	testMember := &model.Member{
 		Name:        "Test_User_" + suffix,
 		Email:       "test" + suffix + "@example.com",
 		PhoneNumber: fmt.Sprintf("010-1234-%04d", 5678+index),
 		Password:    string(hashedPassword),
 	}
 
-	if err := db.Create(member).Error; err != nil {
+	if err := db.Create(testMember).Error; err != nil {
 		t.Fatalf("Failed to create test member: %v", err)
 	}
 
-	return member
+	return testMember
 }
 
 // NewMemberRepository creates a new MemberRepository for testing
-func NewMemberRepository() *member.MemberRepository {
-	return member.NewMemberRepository()
+func NewMemberRepository(db *gorm.DB) *member.MemberRepository {
+	return member.NewMemberRepository(db)
 }
 
 // NewMemberService creates a new MemberService for testing
-func NewMemberService(db *gorm.DB, memberRepo *member.MemberRepository) *member.MemberService {
-	return member.NewMemberService(db, memberRepo)
+func NewMemberService(memberRepo *member.MemberRepository) *member.MemberService {
+	return member.NewMemberService(memberRepo)
+}
+
+// NewMemberUseCase creates a new MemberUseCase for testing
+func NewMemberUseCase(db *gorm.DB, memberService *member.MemberService) *member.MemberUseCase {
+	return member.NewMemberUseCase(db, memberService)
 }

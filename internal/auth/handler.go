@@ -7,12 +7,12 @@ import (
 )
 
 type AuthHandler struct {
-	authService *AuthService
+	authUseCase *AuthUseCase
 }
 
-func NewAuthHandler(authService *AuthService) *AuthHandler {
+func NewAuthHandler(authUseCase *AuthUseCase) *AuthHandler {
 	return &AuthHandler{
-		authService: authService,
+		authUseCase: authUseCase,
 	}
 }
 
@@ -24,7 +24,7 @@ func (a *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	response, err := a.authService.Login(c.Request.Context(), &request)
+	response, err := a.authUseCase.Login(c.Request.Context(), &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
 			sharedHttp.RespondError(c, err, resp)
@@ -46,7 +46,7 @@ func (a *AuthHandler) Signup(c *gin.Context) {
 		return
 	}
 
-	err := a.authService.Signup(c.Request.Context(), &request)
+	err := a.authUseCase.Signup(c.Request.Context(), &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
 			sharedHttp.RespondError(c, err, resp)

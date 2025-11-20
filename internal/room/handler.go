@@ -10,13 +10,13 @@ import (
 
 // RoomHandler handles HTTP requests for room operations
 type RoomHandler struct {
-	roomService *RoomService
+	roomUseCase *RoomUseCase
 }
 
 // NewRoomHandler creates a new RoomHandler instance
-func NewRoomHandler(roomService *RoomService) *RoomHandler {
+func NewRoomHandler(roomUseCase *RoomUseCase) *RoomHandler {
 	return &RoomHandler{
-		roomService: roomService,
+		roomUseCase: roomUseCase,
 	}
 }
 
@@ -38,7 +38,7 @@ func (h *RoomHandler) GetRoomsByInfiniteScroll(c *gin.Context) {
 		return
 	}
 
-	response, err := h.roomService.FetchInfiniteScroll(c.Request.Context(), memberID, &request)
+	response, err := h.roomUseCase.FetchInfiniteScroll(c.Request.Context(), memberID, &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
 			sharedHttp.RespondError(c, err, resp)
@@ -64,7 +64,7 @@ func (h *RoomHandler) CreateRoom(c *gin.Context) {
 		return
 	}
 
-	response, err := h.roomService.CreateRoom(c.Request.Context(), memberID, &request)
+	response, err := h.roomUseCase.CreateRoom(c.Request.Context(), memberID, &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
 			sharedHttp.RespondError(c, err, resp)
@@ -90,7 +90,7 @@ func (h *RoomHandler) DeleteMemberRoom(c *gin.Context) {
 		return
 	}
 
-	response, err := h.roomService.ExitRoom(c.Request.Context(), memberID, request.RoomID)
+	response, err := h.roomUseCase.ExitRoom(c.Request.Context(), memberID, request.RoomID)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
 			sharedHttp.RespondError(c, err, resp)
@@ -115,7 +115,7 @@ func (h *RoomHandler) FetchRoomMembers(c *gin.Context) {
 		return
 	}
 
-	response, err := h.roomService.FetchMembersInRoom(c.Request.Context(), memberID, request.RoomID)
+	response, err := h.roomUseCase.FetchMembersInRoom(c.Request.Context(), memberID, request.RoomID)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
 			sharedHttp.RespondError(c, err, resp)

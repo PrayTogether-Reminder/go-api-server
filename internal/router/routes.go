@@ -19,7 +19,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	router.GET("/health", metaHandler.Health)
 
 	// repository
-	memberRepository := member.NewMemberRepository()
+	memberRepo := member.NewMemberRepository(db.DB)
 	roomRepository := room.NewRoomRepository()
 	memberRoomRepository := room.NewMemberRoomRepository()
 
@@ -27,14 +27,19 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	tokenManager := token.NewJWTManager(cfg)
 
 	// service
-	authService := auth.NewAuthService(db.DB, memberRepository, tokenManager)
-	memberService := member.NewMemberService(db.DB, memberRepository)
-	roomService := room.NewRoomService(db.DB, roomRepository, memberRoomRepository, memberService)
+	memberService := member.NewMemberService(memberRepo)
+	authService := auth.NewAuthService()
+
+	// usecase
+	memberUseCase := member.NewMemberUseCase(db.DB, memberService)
+	authUseCase := auth.NewAuthUseCase(db.DB, memberService, tokenManager, authService)
+	roomService := room.NewRoomService(roomRepository, memberRoomRepository, memberService)
+	roomUseCase := room.NewRoomUseCase(db.DB, roomService)
 
 	// handler
-	authHandler := auth.NewAuthHandler(authService)
-	memberHandler := member.NewMemberHandler(memberService)
-	roomHandler := room.NewRoomHandler(roomService)
+	authHandler := auth.NewAuthHandler(authUseCase)
+	memberHandlerInstance := member.NewMemberHandler(memberUseCase)
+	roomHandler := room.NewRoomHandler(roomUseCase)
 
 	// API v1 routes
 	authV1 := router.Group("/api/v1/auth")
@@ -46,7 +51,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	memberV1 := router.Group("/api/v1/members")
 	memberV1.Use(middleware.JWT(cfg))
 	{
-		memberV1.GET("/me", memberHandler.GetProfile)
+		memberV1.GET("/me", memberHandlerInstance.FetchProfile)
 	}
 
 	roomV1 := router.Group("/api/v1/rooms")

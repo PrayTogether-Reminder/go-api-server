@@ -1,93 +1,37 @@
 package auth
 
 import (
-	"context"
 	"errors"
 	"fmt"
-	"strconv"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/token"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
-type AuthService struct {
-	db               *gorm.DB
-	memberRepository *member.MemberRepository
-	tokenManager     token.Manager
+// AuthService handles low-level auth helpers such as password hashing/comparison.
+type AuthService struct{}
+
+func NewAuthService() *AuthService {
+	return &AuthService{}
 }
 
-func NewAuthService(db *gorm.DB, memberRepository *member.MemberRepository, tokenManager token.Manager) *AuthService {
-	return &AuthService{
-		db:               db,
-		memberRepository: memberRepository,
-		tokenManager:     tokenManager,
+// ComparePassword validates a plaintext password against a stored hash.
+func (a *AuthService) ComparePassword(hashedPassword, plainPassword string) error {
+	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(plainPassword)); err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return ErrInCorrectEmailPassword
+		}
+		return fmt.Errorf("비밀번호 검증 실패: %w", err)
 	}
+
+	return nil
 }
 
-func (a *AuthService) Login(ctx context.Context, request *LoginRequest) (*LoginResponse, error) {
-	log := logger.FromContext(ctx)
-
-	// 1. Find member by email
-	member, err := a.memberRepository.FindByEmail(ctx, a.db, request.Email)
+// HashPassword hashes the provided plaintext password using bcrypt.
+func (a *AuthService) HashPassword(password string) (string, error) {
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("이메일을 찾을 수 없습니다: email=%s %w", logger.MaskEmail(request.Email), ErrInCorrectEmailPassword) // Security: don't reveal if email exists
-		}
-		return nil, fmt.Errorf("로그인 실패: email=%s %w", logger.MaskEmail(request.Email), err)
+		return "", fmt.Errorf("비밀번호 해싱 실패: %w", err)
 	}
 
-	// 2. Validate password
-	if err := bcrypt.CompareHashAndPassword([]byte(member.Password), []byte(request.Password)); err != nil {
-		return nil, fmt.Errorf("로그인 실패: email=%s %w", logger.MaskEmail(request.Email), ErrInCorrectEmailPassword)
-	}
-
-	// 3. Generate JWT tokens
-	memberID := strconv.FormatInt(member.ID, 10)
-	accessToken, err := a.tokenManager.GenerateAccessToken(memberID, member.Email)
-	if err != nil {
-		return nil, fmt.Errorf("AccessToken 생성 실패: memberID=%s %w", memberID, err)
-	}
-
-	refreshToken, err := a.tokenManager.GenerateRefreshToken(memberID, member.Email)
-	if err != nil {
-		return nil, fmt.Errorf("RefreshToken 생성 실패: memberID=%s %w", memberID, err)
-	}
-
-	log.Info("로그인 성공", "email", logger.MaskEmail(request.Email))
-
-	return &LoginResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}, nil
-}
-
-func (a *AuthService) Signup(ctx context.Context, request *SignupRequest) error {
-	log := logger.FromContext(ctx)
-	return database.WithTransaction(ctx, a.db, func(tx *gorm.DB) error {
-		exists, err := a.memberRepository.IsExistByEmail(ctx, tx, request.Email)
-		if err != nil {
-			return fmt.Errorf("회원 존재 확인 오류: email=%s %w", logger.MaskEmail(request.Email), err)
-		}
-		if exists {
-			return fmt.Errorf("이미 존재하는 회원입니다: email=%s %w", logger.MaskEmail(request.Email), member.ErrMemberAlreadyExists)
-		}
-
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
-		if err != nil {
-			return fmt.Errorf("비밀번호 해싱 실패: %w", err)
-		}
-
-		member := model.NewMember(request.Name, request.Email, request.PhoneNumber, string(hashedPassword))
-		if err := a.memberRepository.Create(ctx, tx, member); err != nil {
-			return fmt.Errorf("회원 계정 생성 실패: %w", err)
-		}
-
-		log.Info("Member created successfully", "email", logger.MaskEmail(request.Email))
-		return nil
-	})
+	return string(hashed), nil
 }

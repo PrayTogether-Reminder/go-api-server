@@ -1,11 +1,11 @@
 package auth_test
 
 import (
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"net/http"
 	"testing"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
 	"github.com/stretchr/testify/assert"
@@ -23,10 +23,12 @@ func setupTestEnvironment(t *testing.T) (*auth.AuthHandler, *testutil.MockTokenM
 	})
 
 	// Setup dependencies
-	memberRepo := member.NewMemberRepository()
+	memberRepo := member.NewMemberRepository(db)
+	memberService := testutil.NewMemberService(memberRepo)
 	mockTokenManager := testutil.NewMockTokenManager()
-	authService := auth.NewAuthService(db, memberRepo, mockTokenManager)
-	authHandler := auth.NewAuthHandler(authService)
+	authService := auth.NewAuthService()
+	authUseCase := auth.NewAuthUseCase(db, memberService, mockTokenManager, authService)
+	authHandler := auth.NewAuthHandler(authUseCase)
 
 	return authHandler, mockTokenManager
 }
