@@ -51,9 +51,13 @@ func (u *PrayerUseCase) CreatePrayerTitle(ctx context.Context, memberID int64, r
 		return nil
 	})
 
+	if err != nil {
+		return nil, err
+	}
+
 	return &CreatePrayerTitleResponse{
 		ID:          prayerTitle.ID,
 		Title:       prayerTitle.Title,
 		CreatedTime: prayerTitle.CreatedAt,
-	}, err
+	}, nil
 }

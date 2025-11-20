@@ -3,7 +3,7 @@ package prayer
 import "time"
 
 type CreatePrayerTitleRequest struct {
-	RoomID int64  `json:"roomId" binding:"gt"`
+	RoomID int64  `json:"roomId" binding:"gt=0"`
 	Title  string `json:"title" binding:"required"`
 }
 
