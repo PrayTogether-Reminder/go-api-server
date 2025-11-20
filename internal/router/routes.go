@@ -28,11 +28,11 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 
 	// service
 	memberService := member.NewMemberService(memberRepo)
+	authService := auth.NewAuthService()
 
-	// usecase / services
+	// usecase
 	memberUseCase := member.NewMemberUseCase(db.DB, memberService)
-	authService := auth.NewAuthService(memberService, tokenManager)
-	authUseCase := auth.NewAuthUseCase(db.DB, authService)
+	authUseCase := auth.NewAuthUseCase(db.DB, memberService, tokenManager, authService)
 	roomService := room.NewRoomService(roomRepository, memberRoomRepository, memberService)
 	roomUseCase := room.NewRoomUseCase(db.DB, roomService)
 
