@@ -10,8 +10,8 @@ type PrayerTitle struct {
 
 	BaseEntity
 
-	// OneToMany relationship - PrayerContent 모델 생성 후 활성화
-	// PrayerContents []PrayerContent `gorm:"foreignKey:PrayerTitleID;constraint:OnDelete:CASCADE"`
+	// OneToMany relationship
+	PrayerContents []PrayerContent `gorm:"foreignKey:PrayerTitleID;constraint:OnDelete:CASCADE"`
 }
 
 // TableName specifies the table name for PrayerTitle

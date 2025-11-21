@@ -2,11 +2,12 @@ package prayer
 
 import (
 	"context"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/room"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"gorm.io/gorm"
 )
 
@@ -42,7 +43,7 @@ func (u *PrayerUseCase) CreatePrayerTitle(ctx context.Context, memberID int64, r
 		}
 
 		// Service에 위임하여 기도제목 생성 및 저장
-		createdTitle, err := u.prayerService.CreatePrayerTitle(ctx, tx, prayerRoom, request.Title)
+		createdTitle, err := u.prayerService.CreateTitle(ctx, tx, prayerRoom, request.Title)
 		if err != nil {
 			return err
 		}
@@ -60,4 +61,62 @@ func (u *PrayerUseCase) CreatePrayerTitle(ctx context.Context, memberID int64, r
 		Title:       prayerTitle.Title,
 		CreatedTime: prayerTitle.CreatedAt,
 	}, nil
+}
+
+// validateMemberExistInRoomByTitleId validates if the member exists in the room associated with the prayer title
+func (u *PrayerUseCase) validateMemberExistInRoomByTitleId(ctx context.Context, db *gorm.DB, memberID int64, titleID int64) error {
+	// 기도 제목 조회
+	prayerTitle, err := u.prayerService.GetTitleById(ctx, db, titleID)
+	if err != nil {
+		return err
+	}
+
+	// 멤버가 해당 방에 속하는지 검증
+	return u.roomService.ValidateMemberExistInRoom(ctx, db, memberID, prayerTitle.RoomID)
+}
+
+// CreatePrayerContent creates a new prayer content
+func (u *PrayerUseCase) CreatePrayerContent(
+	ctx context.Context,
+	writerID int64,
+	titleID int64,
+	request *CreatePrayerContentRequest,
+) (*sharedHttp.MessageResponse, error) {
+	var result *sharedHttp.MessageResponse
+
+	err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
+		// 1. 멤버 권한 검증
+		if err := u.validateMemberExistInRoomByTitleId(ctx, tx, writerID, titleID); err != nil {
+			return err
+		}
+
+		// 2. 기도 제목 조회
+		prayerTitle, err := u.prayerService.GetTitleById(ctx, tx, titleID)
+		if err != nil {
+			return err
+		}
+
+		// 3. 작성자(Writer) 조회
+		writer, err := u.memberService.GetByID(ctx, tx, writerID)
+		if err != nil {
+			return err
+		}
+
+		// 4. 기도 내용 생성 및 저장
+		if err := u.prayerService.CreateContent(ctx, tx, prayerTitle, writer, request); err != nil {
+			return err
+		}
+
+		result = &sharedHttp.MessageResponse{
+			Message: "기도 내용을 생성했습니다.",
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

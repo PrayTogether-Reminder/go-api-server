@@ -2,6 +2,7 @@ package prayer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
@@ -16,8 +17,8 @@ func NewPrayerService(repo *PrayerRepository) *PrayerService {
 	return &PrayerService{prayerRepository: repo}
 }
 
-// CreatePrayerTitle creates a new prayer title
-func (s *PrayerService) CreatePrayerTitle(ctx context.Context, tx *gorm.DB, room *model.Room, title string) (*model.PrayerTitle, error) {
+// CreateTitle creates a new prayer title
+func (s *PrayerService) CreateTitle(ctx context.Context, tx *gorm.DB, room *model.Room, title string) (*model.PrayerTitle, error) {
 	prayerTitle := model.NewPrayerTitle(room, title)
 
 	// Repository로 저장
@@ -26,4 +27,52 @@ func (s *PrayerService) CreatePrayerTitle(ctx context.Context, tx *gorm.DB, room
 	}
 
 	return prayerTitle, nil
+}
+
+// GetTitleById fetches a prayer title by its ID
+func (s *PrayerService) GetTitleById(ctx context.Context, db *gorm.DB, titleID int64) (*model.PrayerTitle, error) {
+	prayerTitle, err := s.prayerRepository.FindTitleByID(ctx, db, titleID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("기도 제목을 찾을 수 없습니다: TitleID=%d %w", titleID, ErrPrayerTitleNotFound)
+		}
+		return nil, fmt.Errorf("기도 제목 조회 실패: TitleID=%d %w", titleID, err)
+	}
+	return prayerTitle, nil
+}
+
+// GetTitleInRoom fetches a prayer title by ID and validates it belongs to the specified room
+// Returns the title if it exists in the room, error otherwise
+func (s *PrayerService) GetTitleInRoom(ctx context.Context, db *gorm.DB, titleID int64, roomID int64) (*model.PrayerTitle, error) {
+	prayerTitle, err := s.prayerRepository.FindTitleByIDAndRoomID(ctx, db, titleID, roomID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("기도 제목을 찾을 수 없습니다: TitleID=%d, RoomID=%d %w", titleID, roomID, ErrPrayerTitleNotFound)
+		}
+		return nil, fmt.Errorf("기도 제목 조회 실패: TitleID=%d, RoomID=%d %w", titleID, roomID, err)
+	}
+	return prayerTitle, nil
+}
+
+// CreateContent creates a new prayer content
+func (s *PrayerService) CreateContent(
+	ctx context.Context,
+	tx *gorm.DB,
+	prayerTitle *model.PrayerTitle,
+	writer *model.Member,
+	request *CreatePrayerContentRequest,
+) error {
+	prayerContent := model.NewPrayerContent(
+		prayerTitle,
+		writer,
+		request.MemberID,
+		request.MemberName,
+		request.Content,
+	)
+
+	if err := s.prayerRepository.CreateContent(ctx, tx, prayerContent); err != nil {
+		return fmt.Errorf("기도 내용 생성 실패: %s %w", ErrPrayerContentCreateFailed, err)
+	}
+
+	return nil
 }
