@@ -73,5 +73,6 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	prayerV1.Use(middleware.JWT(cfg))
 	{
 		prayerV1.POST("", prayerHandler.CreatePrayerTitle)
+		prayerV1.POST("/:titleId/contents", prayerHandler.CreatePrayerContent)
 	}
 }

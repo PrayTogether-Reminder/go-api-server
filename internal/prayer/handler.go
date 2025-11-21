@@ -39,5 +39,36 @@ func (h *PrayerHandler) CreatePrayerTitle(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, response)
+}
 
+func (h *PrayerHandler) CreatePrayerContent(c *gin.Context) {
+	writerID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	var uriParam struct {
+		TitleID int64 `uri:"titleId" binding:"gt=0"`
+	}
+	if !sharedHttp.BindURI(c, &uriParam) {
+		return
+	}
+
+	var request CreatePrayerContentRequest
+	if !sharedHttp.BindJSON(c, &request) {
+		return
+	}
+
+	response, err := h.prayerUseCase.CreatePrayerContent(c.Request.Context(), writerID, uriParam.TitleID, &request)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusCreated, response)
 }
