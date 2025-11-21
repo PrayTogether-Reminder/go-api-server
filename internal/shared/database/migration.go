@@ -73,6 +73,8 @@ func runAutoMigrate(db *gorm.DB) error {
 
 		// Dependent tables (with foreign keys)
 		&model.MemberRoom{}, // FK: room_id, member_id
+		&model.PrayerTitle{},
+		&model.PrayerContent{},
 	}
 
 	for _, m := range models {
