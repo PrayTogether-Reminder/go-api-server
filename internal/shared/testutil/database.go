@@ -28,6 +28,7 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 		&model.Room{},
 		&model.Member{},
 		&model.PrayerTitle{},
+		&model.PrayerContent{},
 		// Add other models here as needed
 	)
 	if err != nil {
