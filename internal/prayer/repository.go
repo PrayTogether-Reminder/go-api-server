@@ -2,6 +2,7 @@ package prayer
 
 import (
 	"context"
+	"time"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"gorm.io/gorm"
@@ -16,6 +17,43 @@ func NewPrayerRepository() *PrayerRepository {
 // Create creates a new prayer title in the database
 func (r *PrayerRepository) Create(ctx context.Context, db *gorm.DB, prayerTitle *model.PrayerTitle) error {
 	return db.WithContext(ctx).Create(prayerTitle).Error
+}
+
+// FindTitleInfosByRoomIDInitial fetches the most recent prayer titles in a room
+func (r *PrayerRepository) FindTitleInfosByRoomIDInitial(ctx context.Context, db *gorm.DB, roomID int64, limit int) ([]PrayerTitleInfo, error) {
+	var results []PrayerTitleInfo
+
+	err := db.WithContext(ctx).
+		Table((&model.PrayerTitle{}).TableName()).
+		Select("id, title, created_time").
+		Where("room_id = ?", roomID).
+		Order("created_time DESC, id DESC").
+		Limit(limit).
+		Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
+// FindTitleInfosByRoomIDAfter fetches prayer titles older than the cursor in a room
+func (r *PrayerRepository) FindTitleInfosByRoomIDAfter(ctx context.Context, db *gorm.DB, roomID int64, cursorTime time.Time, limit int) ([]PrayerTitleInfo, error) {
+	var results []PrayerTitleInfo
+
+	err := db.WithContext(ctx).
+		Table((&model.PrayerTitle{}).TableName()).
+		Select("id, title, created_time").
+		Where("room_id = ? AND created_time < ?", roomID, cursorTime).
+		Order("created_time DESC, id DESC").
+		Limit(limit).
+		Scan(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
 
 // FindTitleByID finds a prayer title by its ID

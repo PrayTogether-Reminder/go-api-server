@@ -17,6 +17,35 @@ func NewPrayerHandler(prayerUseCase *PrayerUseCase) *PrayerHandler {
 	}
 }
 
+func (h *PrayerHandler) FetchTitlesByInfiniteScroll(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	var request PrayerTitleInfiniteScrollRequest
+	if !sharedHttp.BindQuery(c, &request) {
+		return
+	}
+
+	if request.After == "" {
+		request.After = DefaultPrayerTitleAfter
+	}
+
+	response, err := h.prayerUseCase.FetchTitlesByInfiniteScroll(c.Request.Context(), memberID, &request)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 func (h *PrayerHandler) CreatePrayerTitle(c *gin.Context) {
 	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"gorm.io/gorm"
@@ -52,6 +53,35 @@ func (s *PrayerService) GetTitleInRoom(ctx context.Context, db *gorm.DB, titleID
 		return nil, fmt.Errorf("기도 제목 조회 실패: TitleID=%d, RoomID=%d %w", titleID, roomID, err)
 	}
 	return prayerTitle, nil
+}
+
+// GetTitleInfosByRoom retrieves prayer titles in a room with cursor-based pagination
+func (s *PrayerService) GetTitleInfosByRoom(ctx context.Context, db *gorm.DB, roomID int64, after string) ([]PrayerTitleInfo, error) {
+	cursor := after
+	if cursor == "" {
+		cursor = DefaultPrayerTitleAfter
+	}
+
+	if cursor == DefaultPrayerTitleAfter {
+		return s.prayerRepository.FindTitleInfosByRoomIDInitial(ctx, db, roomID, PrayerTitleInfiniteScrollLimit)
+	}
+
+	cursorTime, err := parseCursorInstant(cursor)
+	if err != nil {
+		return nil, fmt.Errorf("기도 제목 커서 파싱 실패: after=%s %w", cursor, ErrPrayerTitleInvalidCursor)
+	}
+
+	return s.prayerRepository.FindTitleInfosByRoomIDAfter(ctx, db, roomID, cursorTime, PrayerTitleInfiniteScrollLimit)
+}
+
+func parseCursorInstant(value string) (time.Time, error) {
+	layouts := []string{time.RFC3339Nano, time.RFC3339}
+	for _, layout := range layouts {
+		if ts, err := time.Parse(layout, value); err == nil {
+			return ts, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("invalid time: %s", value)
 }
 
 // CreateContent creates a new prayer content

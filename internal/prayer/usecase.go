@@ -63,6 +63,35 @@ func (u *PrayerUseCase) CreatePrayerTitle(ctx context.Context, memberID int64, r
 	}, nil
 }
 
+// FetchTitlesByInfiniteScroll retrieves prayer titles for infinite scroll
+func (u *PrayerUseCase) FetchTitlesByInfiniteScroll(ctx context.Context, memberID int64, request *PrayerTitleInfiniteScrollRequest) (*PrayerTitleInfiniteScrollResponse, error) {
+	var titleInfos []PrayerTitleInfo
+
+	err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
+		if err := u.roomService.ValidateMemberExistInRoom(ctx, tx, memberID, request.RoomID); err != nil {
+			return err
+		}
+
+		titles, err := u.prayerService.GetTitleInfosByRoom(ctx, tx, request.RoomID, request.After)
+		if err != nil {
+			return err
+		}
+
+		titleInfos = titles
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if titleInfos == nil {
+		titleInfos = make([]PrayerTitleInfo, 0)
+	}
+
+	return &PrayerTitleInfiniteScrollResponse{PrayerTitles: titleInfos}, nil
+}
+
 // validateMemberExistInRoomByTitleId validates if the member exists in the room associated with the prayer title
 func (u *PrayerUseCase) validateMemberExistInRoomByTitleId(ctx context.Context, db *gorm.DB, memberID int64, titleID int64) error {
 	// 기도 제목 조회
