@@ -246,7 +246,8 @@ func TestCreatePrayerContent_PrayerTitleNotFound(t *testing.T) {
 
 	var errorResponse sharedError.ErrorResponse
 	testutil.ParseResponse(t, recorder, &errorResponse)
-	assert.Equal(t, "잘못된 기도 제목을 선택하셨습니다.", errorResponse.Message)
+	assert.NotEmpty(t, errorResponse.Message)
+	assert.Equal(t, "PRAYER-001", errorResponse.Code)
 }
 
 func TestCreatePrayerContent_MemberNotInRoom(t *testing.T) {
