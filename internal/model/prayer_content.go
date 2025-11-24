@@ -8,8 +8,9 @@ type PrayerContent struct {
 	PrayerTitle   *PrayerTitle `gorm:"foreignKey:PrayerTitleID;constraint:OnDelete:CASCADE"`
 	WriterID      int64        `gorm:"column:writer_id;not null;index"`
 	Writer        *Member      `gorm:"foreignKey:WriterID"`
+	WriterName    string       `gorm:"column:writer_name;type:VARCHAR2(30);not null"`
 	MemberID      *int64       `gorm:"column:member_id;index"` // nullable - 기도를 요청한 멤버
-	MemberName    string       `gorm:"column:member_name;type:VARCHAR2(255);not null"`
+	MemberName    string       `gorm:"column:member_name;type:VARCHAR2(30);not null"`
 	Content       string       `gorm:"column:content;type:CLOB;not null"`
 
 	BaseEntity
@@ -34,6 +35,7 @@ func NewPrayerContent(
 		PrayerTitleID: prayerTitle.ID,
 		Writer:        writer,
 		WriterID:      writer.ID,
+		WriterName:    writer.Name,
 		MemberID:      memberID,
 		MemberName:    memberName,
 		Content:       content,
