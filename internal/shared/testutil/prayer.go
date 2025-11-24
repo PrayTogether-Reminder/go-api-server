@@ -33,6 +33,7 @@ func CreateTestPrayerContent(
 	db *gorm.DB,
 	prayerTitleID int64,
 	writerID int64,
+	writerName string,
 	memberID *int64,
 	memberName string,
 	content string,
@@ -42,6 +43,7 @@ func CreateTestPrayerContent(
 	prayerContent := &model.PrayerContent{
 		PrayerTitleID: prayerTitleID,
 		WriterID:      writerID,
+		WriterName:    writerName,
 		MemberID:      memberID,
 		MemberName:    memberName,
 		Content:       content,
