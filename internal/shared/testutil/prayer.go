@@ -1,7 +1,9 @@
 package testutil
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"gorm.io/gorm"
@@ -50,4 +52,27 @@ func CreateTestPrayerContent(
 	}
 
 	return prayerContent
+}
+
+// SeedPrayerTitlesWithTime creates multiple prayer titles with specific created_time for testing pagination.
+// Returns the created prayer titles ordered by creation time (oldest first).
+func SeedPrayerTitlesWithTime(t *testing.T, db *gorm.DB, roomID int64, count int) []*model.PrayerTitle {
+	t.Helper()
+
+	baseTime := time.Now().UTC()
+	titles := make([]*model.PrayerTitle, 0, count)
+	for i := 0; i < count; i++ {
+		title := CreateTestPrayerTitle(t, db, roomID, fmt.Sprintf("Prayer Title %d", i+1))
+		createdAt := baseTime.Add(time.Duration(i) * time.Minute)
+		updates := map[string]interface{}{
+			"created_time": createdAt,
+			"updated_time": createdAt,
+		}
+		if err := db.Model(title).Updates(updates).Error; err != nil {
+			t.Fatalf("failed to adjust prayer title created_time: %v", err)
+		}
+		title.CreatedAt = createdAt
+		titles = append(titles, title)
+	}
+	return titles
 }
