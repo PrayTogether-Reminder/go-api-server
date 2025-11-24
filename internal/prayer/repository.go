@@ -81,3 +81,21 @@ func (r *PrayerRepository) FindTitleByIDAndRoomID(ctx context.Context, db *gorm.
 func (r *PrayerRepository) CreateContent(ctx context.Context, db *gorm.DB, prayerContent *model.PrayerContent) error {
 	return db.WithContext(ctx).Create(prayerContent).Error
 }
+
+// FindContentsByTitleID finds all prayer contents by prayer title ID
+func (r *PrayerRepository) FindContentsByTitleID(ctx context.Context, db *gorm.DB, titleID int64) ([]PrayerContentInfo, error) {
+	var results []PrayerContentInfo
+
+	err := db.WithContext(ctx).
+		Table((&model.PrayerContent{}).TableName()).
+		Select("id, writer_id, writer_name, member_id, member_name, content").
+		Where("prayer_title_id = ?", titleID).
+		Order("created_time ASC").
+		Scan(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}

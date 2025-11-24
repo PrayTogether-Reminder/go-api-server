@@ -106,3 +106,13 @@ func (s *PrayerService) CreateContent(
 
 	return nil
 }
+
+// GetContentsByTitleID retrieves all prayer contents for a specific prayer title
+func (s *PrayerService) GetContentsByTitleID(ctx context.Context, db *gorm.DB, titleID int64) ([]PrayerContentInfo, error) {
+	contents, err := s.prayerRepository.FindContentsByTitleID(ctx, db, titleID)
+	if err != nil {
+		return nil, fmt.Errorf("기도 내용 조회 실패: TitleID=%d %w", titleID, err)
+	}
+
+	return contents, nil
+}

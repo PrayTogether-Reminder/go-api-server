@@ -101,3 +101,30 @@ func (h *PrayerHandler) CreatePrayerContent(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, response)
 }
+
+func (h *PrayerHandler) FetchPrayerContents(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	var uriParam struct {
+		TitleID int64 `uri:"titleId" binding:"gt=0"`
+	}
+	if !sharedHttp.BindURI(c, &uriParam) {
+		return
+	}
+
+	response, err := h.prayerUseCase.FetchPrayerContents(c.Request.Context(), memberID, uriParam.TitleID)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}

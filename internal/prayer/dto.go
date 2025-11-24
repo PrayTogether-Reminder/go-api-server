@@ -38,3 +38,16 @@ type CreatePrayerContentRequest struct {
 	MemberName string `json:"memberName" binding:"required"`
 	Content    string `json:"content" binding:"required"`
 }
+
+type PrayerContentInfo struct {
+	ID         int64  `json:"id"`
+	WriterID   int64  `json:"writerId"`
+	WriterName string `json:"writerName"`
+	MemberID   *int64 `json:"memberId,omitempty"`
+	MemberName string `json:"memberName"`
+	Content    string `json:"content"`
+}
+
+type PrayerContentResponse struct {
+	PrayerContents []PrayerContentInfo `json:"prayerContents"`
+}

@@ -149,3 +149,32 @@ func (u *PrayerUseCase) CreatePrayerContent(
 
 	return result, nil
 }
+
+// FetchPrayerContents retrieves all prayer contents for a specific prayer title
+func (u *PrayerUseCase) FetchPrayerContents(ctx context.Context, memberID int64, titleID int64) (*PrayerContentResponse, error) {
+	var contentInfos []PrayerContentInfo
+
+	err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
+		if err := u.validateMemberExistInRoomByTitleId(ctx, tx, memberID, titleID); err != nil {
+			return err
+		}
+
+		contents, err := u.prayerService.GetContentsByTitleID(ctx, tx, titleID)
+		if err != nil {
+			return err
+		}
+
+		contentInfos = contents
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if contentInfos == nil {
+		contentInfos = make([]PrayerContentInfo, 0)
+	}
+
+	return &PrayerContentResponse{PrayerContents: contentInfos}, nil
+}

@@ -75,5 +75,6 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 		prayerV1.GET("", prayerHandler.FetchTitlesByInfiniteScroll)
 		prayerV1.POST("", prayerHandler.CreatePrayerTitle)
 		prayerV1.POST("/:titleId/contents", prayerHandler.CreatePrayerContent)
+		prayerV1.GET("/:titleId/contents", prayerHandler.FetchPrayerContents)
 	}
 }
