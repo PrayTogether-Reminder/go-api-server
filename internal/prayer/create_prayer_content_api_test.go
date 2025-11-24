@@ -60,6 +60,7 @@ func TestCreatePrayerContent_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, prayerTitle.ID, createdPrayerContent.PrayerTitleID)
 	assert.Equal(t, memberID, createdPrayerContent.WriterID)
+	assert.NotEmpty(t, createdPrayerContent.WriterName)
 	assert.Equal(t, &targetMemberID, createdPrayerContent.MemberID)
 	assert.Equal(t, "John Doe", createdPrayerContent.MemberName)
 	assert.Equal(t, "I will pray for you", createdPrayerContent.Content)
@@ -99,6 +100,7 @@ func TestCreatePrayerContent_Success_WithoutMemberID(t *testing.T) {
 		Where("prayer_title_id = ? AND writer_id = ?", prayerTitle.ID, memberID).
 		First(&createdPrayerContent).Error
 	assert.NoError(t, err)
+	assert.NotEmpty(t, createdPrayerContent.WriterName)
 	assert.Nil(t, createdPrayerContent.MemberID)
 	assert.Equal(t, "John Doe", createdPrayerContent.MemberName)
 }
