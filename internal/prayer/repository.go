@@ -109,3 +109,35 @@ func (r *PrayerRepository) Update(ctx context.Context, db *gorm.DB, prayerTitle 
 			"title": prayerTitle.Title,
 		}).Error
 }
+
+// FindContentByID finds a prayer content by its ID
+func (r *PrayerRepository) FindContentByID(ctx context.Context, db *gorm.DB, contentID int64) (*model.PrayerContent, error) {
+	var prayerContent model.PrayerContent
+	if err := db.WithContext(ctx).Where("id = ?", contentID).First(&prayerContent).Error; err != nil {
+		return nil, err
+	}
+	return &prayerContent, nil
+}
+
+// ExistsContentInTitle checks if a prayer content exists in a specific title
+func (r *PrayerRepository) ExistsContentInTitle(ctx context.Context, db *gorm.DB, contentID int64, titleID int64) (bool, error) {
+	var count int64
+	err := db.WithContext(ctx).
+		Model(&model.PrayerContent{}).
+		Where("id = ? AND prayer_title_id = ?", contentID, titleID).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// UpdateContent updates a prayer content in the database
+func (r *PrayerRepository) UpdateContent(ctx context.Context, db *gorm.DB, prayerContent *model.PrayerContent) error {
+	return db.WithContext(ctx).
+		Model(&model.PrayerContent{}).
+		Where("id = ?", prayerContent.ID).
+		Updates(map[string]interface{}{
+			"content": prayerContent.Content,
+		}).Error
+}

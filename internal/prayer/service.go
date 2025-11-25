@@ -133,3 +133,44 @@ func (s *PrayerService) UpdateTitle(ctx context.Context, tx *gorm.DB, titleID in
 
 	return nil
 }
+
+// GetContentByID fetches a prayer content by its ID
+func (s *PrayerService) GetContentByID(ctx context.Context, db *gorm.DB, contentID int64) (*model.PrayerContent, error) {
+	prayerContent, err := s.prayerRepository.FindContentByID(ctx, db, contentID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("기도 내용을 찾을 수 없습니다: ContentID=%d %w", contentID, ErrPrayerContentNotFound)
+		}
+		return nil, fmt.Errorf("기도 내용 조회 실패: ContentID=%d %w", contentID, err)
+	}
+	return prayerContent, nil
+}
+
+// ValidateContentExistsInTitle validates that a prayer content exists in a specific prayer title
+func (s *PrayerService) ValidateContentExistsInTitle(ctx context.Context, db *gorm.DB, contentID int64, titleID int64) error {
+	exists, err := s.prayerRepository.ExistsContentInTitle(ctx, db, contentID, titleID)
+	if err != nil {
+		return fmt.Errorf("기도 내용 존재 확인 실패: ContentID=%d, TitleID=%d %w", contentID, titleID, err)
+	}
+	if !exists {
+		return fmt.Errorf("기도 내용을 찾을 수 없습니다: ContentID=%d, TitleID=%d %w", contentID, titleID, ErrPrayerContentNotFound)
+	}
+	return nil
+}
+
+// UpdateContent updates a prayer content
+func (s *PrayerService) UpdateContent(ctx context.Context, tx *gorm.DB, contentID int64, changedContent string) error {
+	prayerContent, err := s.GetContentByID(ctx, tx, contentID)
+	if err != nil {
+		return err
+	}
+
+	prayerContent.UpdateContent(changedContent)
+
+	// Repository를 통해 변경사항 저장
+	if err := s.prayerRepository.UpdateContent(ctx, tx, prayerContent); err != nil {
+		return fmt.Errorf("기도 내용 업데이트 실패: ContentID=%d %w", contentID, err)
+	}
+
+	return nil
+}

@@ -56,6 +56,15 @@ type UpdatePrayerTitleRequest struct {
 	ChangedTitle string `json:"changedTitle" binding:"required,min=1,max=50"`
 }
 
+type UpdatePrayerContentRequest struct {
+	ChangedContent string `json:"changedContent" binding:"required"`
+}
+
 type TitleIDParam struct {
 	TitleID int64 `uri:"titleId" binding:"gt=0"`
+}
+
+type TitleIDContentIDParam struct {
+	TitleID   int64 `uri:"titleId" binding:"gt=0"`
+	ContentID int64 `uri:"contentId" binding:"gt=0"`
 }

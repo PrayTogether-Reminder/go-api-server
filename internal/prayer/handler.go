@@ -157,3 +157,33 @@ func (h *PrayerHandler) UpdatePrayerTitle(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *PrayerHandler) UpdatePrayerContent(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	var path TitleIDContentIDParam
+	if !sharedHttp.BindURI(c, &path) {
+		return
+	}
+
+	var request UpdatePrayerContentRequest
+	if !sharedHttp.BindJSON(c, &request) {
+		return
+	}
+
+	response, err := h.prayerUseCase.UpdatePrayerContent(c.Request.Context(), memberID, path.TitleID, path.ContentID, &request)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}

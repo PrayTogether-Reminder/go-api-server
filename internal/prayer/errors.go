@@ -10,6 +10,7 @@ const (
 	prayerTitleCreateFailed   = "PRAYER_TITLE_CREATE_FAILED"   // errInfo
 	prayerTitleNotFound       = "PRAYER_TITLE_NOT_FOUND"       // errInfo
 	prayerContentCreateFailed = "PRAYER_CONTENT_CREATE_FAILED" // errInfo
+	prayerContentNotFound     = "PRAYER_CONTENT_NOT_FOUND"     // errInfo
 	prayerTitleInvalidCursor  = "PRAYER_TITLE_INVALID_CURSOR"  // errInfo
 )
 
@@ -17,6 +18,7 @@ var (
 	ErrPrayerTitleCreateFailed   = sharedError.NewDomainError(prayerTitleCreateFailed)
 	ErrPrayerTitleNotFound       = sharedError.NewDomainError(prayerTitleNotFound)
 	ErrPrayerContentCreateFailed = sharedError.NewDomainError(prayerContentCreateFailed)
+	ErrPrayerContentNotFound     = sharedError.NewDomainError(prayerContentNotFound)
 	ErrPrayerTitleInvalidCursor  = sharedError.NewDomainError(prayerTitleInvalidCursor)
 )
 
@@ -38,6 +40,12 @@ func init() {
 		Status:  http.StatusInternalServerError,
 		Code:    "PRAYER-005",
 		Message: "기도 내용 작성에 실패했습니다.",
+	})
+
+	sharedError.RegisterDomainErrorResponse(prayerContentNotFound, sharedError.ErrorResponse{
+		Status:  http.StatusNotFound,
+		Code:    "PRAYER-002",
+		Message: "기도 내용을 찾을 수 없습니다.",
 	})
 
 	sharedError.RegisterDomainErrorResponse(prayerTitleInvalidCursor, sharedError.ErrorResponse{

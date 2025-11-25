@@ -205,3 +205,38 @@ func (u *PrayerUseCase) UpdatePrayerTitle(
 		Message: "기도 제목을 변경했습니다.",
 	}, nil
 }
+
+// UpdatePrayerContent updates a prayer content
+func (u *PrayerUseCase) UpdatePrayerContent(
+	ctx context.Context,
+	memberID int64,
+	titleID int64,
+	contentID int64,
+	request *UpdatePrayerContentRequest,
+) (*sharedHttp.MessageResponse, error) {
+	err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
+		if err := u.validateMemberExistInRoomByTitleId(ctx, tx, memberID, titleID); err != nil {
+			return err
+		}
+
+		// 2. 기도 내용 존재 검증 (contentId가 titleId에 속하는지)
+		if err := u.prayerService.ValidateContentExistsInTitle(ctx, tx, contentID, titleID); err != nil {
+			return err
+		}
+
+		// 3. 기도 내용 업데이트
+		if err := u.prayerService.UpdateContent(ctx, tx, contentID, request.ChangedContent); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &sharedHttp.MessageResponse{
+		Message: "기도 내용을 변경했습니다.",
+	}, nil
+}
