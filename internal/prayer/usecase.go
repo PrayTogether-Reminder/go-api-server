@@ -267,3 +267,35 @@ func (u *PrayerUseCase) DeletePrayerTitle(
 		Message: "기도 제목을 삭제했습니다.",
 	}, nil
 }
+
+// DeletePrayerContent deletes a prayer content
+func (u *PrayerUseCase) DeletePrayerContent(
+	ctx context.Context,
+	memberID int64,
+	titleID int64,
+	contentID int64,
+) (*sharedHttp.MessageResponse, error) {
+	err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
+		if err := u.validateMemberExistInRoomByTitleId(ctx, tx, memberID, titleID); err != nil {
+			return err
+		}
+
+		if err := u.prayerService.ValidateContentExistsInTitle(ctx, tx, contentID, titleID); err != nil {
+			return err
+		}
+
+		if err := u.prayerService.DeleteContent(ctx, tx, contentID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &sharedHttp.MessageResponse{
+		Message: "기도 내용을 삭제했습니다.",
+	}, nil
+}

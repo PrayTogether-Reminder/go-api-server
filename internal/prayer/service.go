@@ -189,3 +189,18 @@ func (s *PrayerService) DeleteTitle(ctx context.Context, tx *gorm.DB, titleID in
 
 	return nil
 }
+
+// DeleteContent deletes a prayer content
+func (s *PrayerService) DeleteContent(ctx context.Context, tx *gorm.DB, contentID int64) error {
+	_, err := s.GetContentByID(ctx, tx, contentID)
+	if err != nil {
+		return err
+	}
+
+	// 2. Repository를 통해 삭제
+	if err := s.prayerRepository.DeleteContent(ctx, tx, contentID); err != nil {
+		return fmt.Errorf("기도 내용 삭제 실패: ContentID=%d %w", contentID, err)
+	}
+
+	return nil
+}

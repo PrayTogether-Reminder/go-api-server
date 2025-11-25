@@ -212,3 +212,28 @@ func (h *PrayerHandler) DeletePrayerTitle(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+func (h *PrayerHandler) DeletePrayerContent(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	var path TitleIDContentIDParam
+	if !sharedHttp.BindURI(c, &path) {
+		return
+	}
+
+	response, err := h.prayerUseCase.DeletePrayerContent(c.Request.Context(), memberID, path.TitleID, path.ContentID)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}

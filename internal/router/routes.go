@@ -79,5 +79,6 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 		prayerV1.POST("/:titleId/contents", prayerHandler.CreatePrayerContent)
 		prayerV1.GET("/:titleId/contents", prayerHandler.FetchPrayerContents)
 		prayerV1.PUT("/:titleId/contents/:contentId", prayerHandler.UpdatePrayerContent)
+		prayerV1.DELETE("/:titleId/contents/:contentId", prayerHandler.DeletePrayerContent)
 	}
 }

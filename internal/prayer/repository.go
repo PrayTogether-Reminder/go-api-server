@@ -149,3 +149,10 @@ func (r *PrayerRepository) Delete(ctx context.Context, db *gorm.DB, title *model
 		Select("PrayerContents").
 		Delete(&title).Error
 }
+
+// DeleteContent deletes a prayer content by ID
+func (r *PrayerRepository) DeleteContent(ctx context.Context, db *gorm.DB, contentID int64) error {
+	return db.WithContext(ctx).
+		Where("id = ?", contentID).
+		Delete(&model.PrayerContent{}).Error
+}
