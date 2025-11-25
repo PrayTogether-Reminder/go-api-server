@@ -178,3 +178,30 @@ func (u *PrayerUseCase) FetchPrayerContents(ctx context.Context, memberID int64,
 
 	return &PrayerContentResponse{PrayerContents: contentInfos}, nil
 }
+
+// UpdatePrayerTitle updates a prayer title
+func (u *PrayerUseCase) UpdatePrayerTitle(
+	ctx context.Context,
+	memberID int64,
+	titleID int64,
+	request *UpdatePrayerTitleRequest,
+) (*sharedHttp.MessageResponse, error) {
+	err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
+		if err := u.validateMemberExistInRoomByTitleId(ctx, tx, memberID, titleID); err != nil {
+			return err
+		}
+
+		if err := u.prayerService.UpdateTitle(ctx, tx, titleID, request.ChangedTitle); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &sharedHttp.MessageResponse{
+		Message: "기도 제목을 변경했습니다.",
+	}, nil
+}

@@ -1,10 +1,11 @@
 package prayer
 
 import (
+	"net/http"
+
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
 	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 type PrayerHandler struct {
@@ -108,14 +109,42 @@ func (h *PrayerHandler) FetchPrayerContents(c *gin.Context) {
 		return
 	}
 
-	var uriParam struct {
-		TitleID int64 `uri:"titleId" binding:"gt=0"`
-	}
-	if !sharedHttp.BindURI(c, &uriParam) {
+	var path TitleIDParam
+	if !sharedHttp.BindURI(c, &path) {
 		return
 	}
 
-	response, err := h.prayerUseCase.FetchPrayerContents(c.Request.Context(), memberID, uriParam.TitleID)
+	response, err := h.prayerUseCase.FetchPrayerContents(c.Request.Context(), memberID, path.TitleID)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *PrayerHandler) UpdatePrayerTitle(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	var path TitleIDParam
+	if !sharedHttp.BindURI(c, &path) {
+		return
+	}
+
+	var request UpdatePrayerTitleRequest
+	if !sharedHttp.BindJSON(c, &request) {
+		return
+	}
+
+	response, err := h.prayerUseCase.UpdatePrayerTitle(c.Request.Context(), memberID, path.TitleID, &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
 			sharedHttp.RespondError(c, err, resp)

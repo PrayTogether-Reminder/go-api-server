@@ -51,3 +51,11 @@ type PrayerContentInfo struct {
 type PrayerContentResponse struct {
 	PrayerContents []PrayerContentInfo `json:"prayerContents"`
 }
+
+type UpdatePrayerTitleRequest struct {
+	ChangedTitle string `json:"changedTitle" binding:"required,min=1,max=50"`
+}
+
+type TitleIDParam struct {
+	TitleID int64 `uri:"titleId" binding:"gt=0"`
+}

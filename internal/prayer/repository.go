@@ -99,3 +99,13 @@ func (r *PrayerRepository) FindContentsByTitleID(ctx context.Context, db *gorm.D
 
 	return results, nil
 }
+
+// Update updates a prayer title in the database
+func (r *PrayerRepository) Update(ctx context.Context, db *gorm.DB, prayerTitle *model.PrayerTitle) error {
+	return db.WithContext(ctx).
+		Model(&model.PrayerTitle{}).
+		Where("id = ?", prayerTitle.ID).
+		Updates(map[string]interface{}{
+			"title": prayerTitle.Title,
+		}).Error
+}

@@ -116,3 +116,20 @@ func (s *PrayerService) GetContentsByTitleID(ctx context.Context, db *gorm.DB, t
 
 	return contents, nil
 }
+
+// UpdateTitle updates a prayer title
+func (s *PrayerService) UpdateTitle(ctx context.Context, tx *gorm.DB, titleID int64, changedTitle string) error {
+	prayerTitle, err := s.GetTitleById(ctx, tx, titleID)
+	if err != nil {
+		return err
+	}
+
+	prayerTitle.UpdateTitle(changedTitle)
+
+	// Repository를 통해 변경사항 저장
+	if err := s.prayerRepository.Update(ctx, tx, prayerTitle); err != nil {
+		return fmt.Errorf("기도 제목 업데이트 실패: TitleID=%d %w", titleID, err)
+	}
+
+	return nil
+}
