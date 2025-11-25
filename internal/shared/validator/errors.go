@@ -53,6 +53,8 @@ func getErrorMessage(fe validator.FieldError) string {
 				return "잘못된 방을 선택하셨습니다."
 			case "MemberID":
 				return "잘못된 회원을 선택하셨습니다."
+			case "TitleID":
+				return "잘못된 기도제목을 선택하셨습니다."
 			default:
 				return "잘못된 값을 선택하셨습니다."
 			}

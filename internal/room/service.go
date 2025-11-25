@@ -2,6 +2,7 @@ package room
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -32,10 +33,10 @@ func NewRoomService(roomRepository *RoomRepository, memberRoomRepository *Member
 	}
 }
 
-// FetchInfiniteScroll fetches rooms with infinite scroll pagination
+// GetInfiniteScroll fetches rooms with infinite scroll pagination
 // Java의 fetchRoomsInfiniteScroll 메서드와 동일한 로직
-func (s *RoomService) FetchInfiniteScroll(ctx context.Context, tx *gorm.DB, memberID int64, request *InfiniteScrollRequest) (*InfiniteScrollResponse, error) {
-	roomInfos, err := s.fetchRoomInfosByMember(ctx, tx, memberID, request)
+func (s *RoomService) GetInfiniteScroll(ctx context.Context, tx *gorm.DB, memberID int64, request *InfiniteScrollRequest) (*InfiniteScrollResponse, error) {
+	roomInfos, err := s.getRoomInfosByMember(ctx, tx, memberID, request)
 	if err != nil {
 		return nil, fmt.Errorf("방 목록 조회 실패: %w", err)
 	}
@@ -68,9 +69,9 @@ func (s *RoomService) FetchInfiniteScroll(ctx context.Context, tx *gorm.DB, memb
 	return &InfiniteScrollResponse{Rooms: roomInfos}, nil
 }
 
-// fetchRoomInfosByMember fetches rooms for a member based on pagination
-// Java의 fetchRoomInfosByMember 메서드와 동일한 로직
-func (s *RoomService) fetchRoomInfosByMember(ctx context.Context, tx *gorm.DB, memberID int64, request *InfiniteScrollRequest) ([]RoomInfo, error) {
+// getRoomInfosByMember fetches rooms for a member based on pagination
+// Java의 getRoomInfosByMember 메서드와 동일한 로직
+func (s *RoomService) getRoomInfosByMember(ctx context.Context, tx *gorm.DB, memberID int64, request *InfiniteScrollRequest) ([]RoomInfo, error) {
 	// TODO: 전략 패턴으로 orderBy 및 dir에 따른 repository 메서드 차별화 구현 (time, name, memberCnt 등)
 
 	// Initial request (first page)
@@ -135,7 +136,7 @@ func (s *RoomService) ExitRoom(ctx context.Context, tx *gorm.DB, memberID int64,
 	}, nil
 }
 
-func (s *RoomService) FetchMembersInRoom(ctx context.Context, tx *gorm.DB, memberID int64, roomID int64) (*FetchRoomMemberResponse, error) {
+func (s *RoomService) GetMembersInRoom(ctx context.Context, tx *gorm.DB, memberID int64, roomID int64) (*FetchRoomMemberResponse, error) {
 
 	if err := s.ValidateMemberExistInRoom(ctx, tx, memberID, roomID); err != nil {
 		return nil, err
@@ -175,4 +176,15 @@ func (s *RoomService) ValidateMemberExistInRoom(ctx context.Context, tx *gorm.DB
 		return ErrMemberRoomNotFound
 	}
 	return nil
+}
+
+func (s *RoomService) GetRoomByID(ctx context.Context, tx *gorm.DB, roomID int64) (*model.Room, error) {
+	room, err := s.roomRepository.FindByID(ctx, tx, roomID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("방을 찾을 수 없습니다: roomID=%d %w", roomID, err)
+		}
+		return nil, fmt.Errorf("방 조회 실패: %w", err)
+	}
+	return room, nil
 }

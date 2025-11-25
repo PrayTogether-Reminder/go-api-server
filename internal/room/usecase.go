@@ -24,7 +24,7 @@ func NewRoomUseCase(db *gorm.DB, roomService *RoomService) *RoomUseCase {
 func (u *RoomUseCase) FetchInfiniteScroll(ctx context.Context, memberID int64, request *InfiniteScrollRequest) (*InfiniteScrollResponse, error) {
 	var response *InfiniteScrollResponse
 	err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
-		result, err := u.roomService.FetchInfiniteScroll(ctx, tx, memberID, request)
+		result, err := u.roomService.GetInfiniteScroll(ctx, tx, memberID, request)
 		if err != nil {
 			return err
 		}
@@ -63,7 +63,7 @@ func (u *RoomUseCase) ExitRoom(ctx context.Context, memberID int64, roomID int64
 func (u *RoomUseCase) FetchMembersInRoom(ctx context.Context, memberID int64, roomID int64) (*FetchRoomMemberResponse, error) {
 	var response *FetchRoomMemberResponse
 	err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
-		result, err := u.roomService.FetchMembersInRoom(ctx, tx, memberID, roomID)
+		result, err := u.roomService.GetMembersInRoom(ctx, tx, memberID, roomID)
 		if err != nil {
 			return err
 		}

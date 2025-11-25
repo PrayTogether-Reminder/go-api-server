@@ -17,7 +17,7 @@ func TestFetchRoomsInfiniteScroll_Success_FirstPage(t *testing.T) {
 	roomHandler, db, memberID := setupTestEnvironment(t)
 
 	router := testutil.SetupAuthenticatedRouter(memberID)
-	router.GET("/api/v1/rooms", roomHandler.GetRoomsByInfiniteScroll)
+	router.GET("/api/v1/rooms", roomHandler.FetchRoomsByInfiniteScroll)
 
 	// Given: Create 15 test rooms for pagination test
 	testutil.CreateTestRooms(t, db, memberID, 15)
@@ -59,7 +59,7 @@ func TestFetchRoomsInfiniteScroll_Success_MultiplePages(t *testing.T) {
 	roomHandler, db, memberID := setupTestEnvironment(t)
 
 	router := testutil.SetupAuthenticatedRouter(memberID)
-	router.GET("/api/v1/rooms", roomHandler.GetRoomsByInfiniteScroll)
+	router.GET("/api/v1/rooms", roomHandler.FetchRoomsByInfiniteScroll)
 
 	// Given: Create 15 test rooms for pagination test
 	testutil.CreateTestRooms(t, db, memberID, 15)
@@ -130,7 +130,7 @@ func TestFetchRoomsInfiniteScroll_Success_EmptyResult(t *testing.T) {
 	roomHandler, db, memberID := setupTestEnvironment(t)
 
 	router := testutil.SetupAuthenticatedRouter(memberID)
-	router.GET("/api/v1/rooms", roomHandler.GetRoomsByInfiniteScroll)
+	router.GET("/api/v1/rooms", roomHandler.FetchRoomsByInfiniteScroll)
 
 	// Given: Create only 5 test rooms
 	testutil.CreateTestRooms(t, db, memberID, 5)
@@ -172,7 +172,7 @@ func TestFetchRoomsInfiniteScroll_Success_NoRooms(t *testing.T) {
 	roomHandler, _, memberID := setupTestEnvironment(t)
 
 	router := testutil.SetupAuthenticatedRouter(memberID)
-	router.GET("/api/v1/rooms", roomHandler.GetRoomsByInfiniteScroll)
+	router.GET("/api/v1/rooms", roomHandler.FetchRoomsByInfiniteScroll)
 
 	// When: Request first page
 	request := testutil.TestRequest{
@@ -195,7 +195,7 @@ func TestFetchRoomsInfiniteScroll_ValidationError_InvalidAfter(t *testing.T) {
 	roomHandler, _, memberID := setupTestEnvironment(t)
 
 	router := testutil.SetupAuthenticatedRouter(memberID)
-	router.GET("/api/v1/rooms", roomHandler.GetRoomsByInfiniteScroll)
+	router.GET("/api/v1/rooms", roomHandler.FetchRoomsByInfiniteScroll)
 
 	// When: Request with invalid after format
 	request := testutil.TestRequest{
@@ -214,7 +214,7 @@ func TestFetchRoomsInfiniteScroll_Success_DefaultParameters(t *testing.T) {
 	roomHandler, db, memberID := setupTestEnvironment(t)
 
 	router := testutil.SetupAuthenticatedRouter(memberID)
-	router.GET("/api/v1/rooms", roomHandler.GetRoomsByInfiniteScroll)
+	router.GET("/api/v1/rooms", roomHandler.FetchRoomsByInfiniteScroll)
 
 	// Given: Create test rooms
 	testutil.CreateTestRooms(t, db, memberID, 5)

@@ -20,8 +20,8 @@ func NewRoomHandler(roomUseCase *RoomUseCase) *RoomHandler {
 	}
 }
 
-// GetRoomsByInfiniteScroll handles GET /api/v1/rooms
-func (h *RoomHandler) GetRoomsByInfiniteScroll(c *gin.Context) {
+// FetchRoomsByInfiniteScroll handles GET /api/v1/rooms
+func (h *RoomHandler) FetchRoomsByInfiniteScroll(c *gin.Context) {
 	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
