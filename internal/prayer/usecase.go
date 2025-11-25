@@ -240,3 +240,30 @@ func (u *PrayerUseCase) UpdatePrayerContent(
 		Message: "기도 내용을 변경했습니다.",
 	}, nil
 }
+
+// DeletePrayerTitle deletes a prayer title
+func (u *PrayerUseCase) DeletePrayerTitle(
+	ctx context.Context,
+	memberID int64,
+	titleID int64,
+) (*sharedHttp.MessageResponse, error) {
+	err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
+		if err := u.validateMemberExistInRoomByTitleId(ctx, tx, memberID, titleID); err != nil {
+			return err
+		}
+
+		if err := u.prayerService.DeleteTitle(ctx, tx, titleID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &sharedHttp.MessageResponse{
+		Message: "기도 제목을 삭제했습니다.",
+	}, nil
+}

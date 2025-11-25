@@ -141,3 +141,11 @@ func (r *PrayerRepository) UpdateContent(ctx context.Context, db *gorm.DB, praye
 			"content": prayerContent.Content,
 		}).Error
 }
+
+// Delete deletes a prayer title by ID
+// CASCADE 설정으로 연관된 PrayerContent도 자동 삭제됨
+func (r *PrayerRepository) Delete(ctx context.Context, db *gorm.DB, title *model.PrayerTitle) error {
+	return db.WithContext(ctx).
+		Select("PrayerContents").
+		Delete(&title).Error
+}

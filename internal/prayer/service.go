@@ -174,3 +174,18 @@ func (s *PrayerService) UpdateContent(ctx context.Context, tx *gorm.DB, contentI
 
 	return nil
 }
+
+// DeleteTitle deletes a prayer title
+// CASCADE 설정으로 연관된 PrayerContent도 자동 삭제됨
+func (s *PrayerService) DeleteTitle(ctx context.Context, tx *gorm.DB, titleID int64) error {
+	prayerTitle, err := s.GetTitleById(ctx, tx, titleID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.prayerRepository.Delete(ctx, tx, prayerTitle); err != nil {
+		return fmt.Errorf("기도 제목 삭제 실패: TitleID=%d %w", titleID, err)
+	}
+
+	return nil
+}
