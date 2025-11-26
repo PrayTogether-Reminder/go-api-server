@@ -85,6 +85,8 @@ func (u *AuthUseCase) Signup(ctx context.Context, request *SignupRequest) error 
 }
 
 func (u *AuthUseCase) RequestEmailOTP(ctx context.Context, request *EmailOtpRequest) (*sharedHttp.MessageResponse, error) {
+	log := logger.FromContext(ctx)
+
 	exists, err := u.memberService.ExistsByEmail(ctx, u.db, request.Email)
 	if err != nil {
 		return nil, err
@@ -95,8 +97,28 @@ func (u *AuthUseCase) RequestEmailOTP(ctx context.Context, request *EmailOtpRequ
 	}
 
 	if err := u.otpService.SendToEmail(ctx, request.Email); err != nil {
+		log.Error("OTP 발송 실패", "email", logger.MaskEmail(request.Email), "error", err)
 		return nil, err
 	}
 
+	log.Info("OTP 발송 성공", "email", logger.MaskEmail(request.Email))
 	return &sharedHttp.MessageResponse{Message: "인증 번호를 요청했습니다."}, nil
+}
+
+func (u *AuthUseCase) VerifyEmailOTP(ctx context.Context, request *VerifyOtpRequest) (*sharedHttp.MessageResponse, error) {
+	log := logger.FromContext(ctx)
+
+	isValid, err := u.otpService.VerifyOTP(ctx, request.Email, request.Otp)
+	if err != nil {
+		log.Error("OTP 검증 실패", "email", logger.MaskEmail(request.Email), "error", err)
+		return nil, err
+	}
+
+	if !isValid {
+		log.Warn("OTP 불일치", "email", logger.MaskEmail(request.Email))
+		return &sharedHttp.MessageResponse{Message: "인증 번호가 일치하지 않습니다."}, nil
+	}
+
+	log.Info("OTP 검증 성공", "email", logger.MaskEmail(request.Email))
+	return &sharedHttp.MessageResponse{Message: "인증에 성공했습니다."}, nil
 }

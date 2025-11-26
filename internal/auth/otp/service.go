@@ -32,6 +32,24 @@ func (s *Service) SendToEmail(ctx context.Context, email string) error {
 	return nil
 }
 
+// VerifyOTP verifies the OTP for the given email.
+// Returns true if the OTP matches, false otherwise.
+// If no OTP exists for the email, returns an error.
+func (s *Service) VerifyOTP(ctx context.Context, email, otp string) (bool, error) {
+	cachedOTP, exists := s.cache.Get(email)
+	if !exists {
+		return false, fmt.Errorf("등록되지 않은 OTP 입니다: %w", ErrOTPNotFound)
+	}
+
+	if cachedOTP != otp {
+		return false, nil
+	}
+
+	// OTP 일치 시 캐시에서 즉시 삭제 (재사용 방지)
+	s.cache.Delete(email)
+	return true, nil
+}
+
 // GetCachedOTP는 테스트를 위한 헬퍼입니다.
 func (s *Service) GetCachedOTP(email string) (string, bool) {
 	return s.cache.Get(email)
