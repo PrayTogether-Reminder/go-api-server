@@ -27,7 +27,7 @@ func setupTestEnvironment(t *testing.T) (*room.RoomHandler, *gorm.DB, int64) {
 	memberRoomRepo := room.NewMemberRoomRepository()
 
 	// Create member service for validation
-	memberRepo := testutil.NewMemberRepository(db)
+	memberRepo := testutil.NewMemberRepository()
 	memberService := testutil.NewMemberService(memberRepo)
 
 	roomService := room.NewRoomService(roomRepo, memberRoomRepo, memberService)

@@ -26,7 +26,7 @@ func setupTestEnvironment(t *testing.T) (*prayer.PrayerHandler, *gorm.DB, int64)
 	// Setup room dependencies (needed for validation)
 	roomRepo := room.NewRoomRepository()
 	memberRoomRepo := room.NewMemberRoomRepository()
-	memberRepo := testutil.NewMemberRepository(db)
+	memberRepo := testutil.NewMemberRepository()
 	memberService := testutil.NewMemberService(memberRepo)
 	roomService := room.NewRoomService(roomRepo, memberRoomRepo, memberService)
 
