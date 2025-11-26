@@ -16,3 +16,7 @@ type LoginResponse struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
 }
+
+type EmailOtpRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}

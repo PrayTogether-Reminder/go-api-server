@@ -1,7 +1,10 @@
 package router
 
 import (
+	"time"
+
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth/otp"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/meta"
@@ -25,6 +28,12 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	memberRoomRepository := room.NewMemberRoomRepository()
 	prayerRepository := prayer.NewPrayerRepository()
 
+	// OTP dependencies
+	otpCache := otp.NewInMemoryCache()
+	otpSender := otp.NewSMTPSender(cfg.SMTP)
+	otpGenerator := otp.NewNumericGenerator(6)
+	otpService := otp.NewService(otpCache, otpSender, otpGenerator, 3*time.Minute) // 3분 TTL
+
 	// shared services
 	tokenManager := token.NewJWTManager(cfg)
 
@@ -36,7 +45,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 
 	// usecase
 	memberUseCase := member.NewMemberUseCase(db.DB, memberService)
-	authUseCase := auth.NewAuthUseCase(db.DB, memberService, tokenManager, authService)
+	authUseCase := auth.NewAuthUseCase(db.DB, memberService, tokenManager, authService, otpService)
 	roomUseCase := room.NewRoomUseCase(db.DB, roomService)
 	prayerUseCase := prayer.NewPrayerUseCase(db.DB, prayerService, roomService, memberService)
 
@@ -51,6 +60,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	{
 		authV1.POST("/signup", authHandler.Signup)
 		authV1.POST("/login", authHandler.Login)
+		authV1.POST("/otp/email", authHandler.RequestEmailOTP)
 	}
 
 	memberV1 := router.Group("/api/v1/members")

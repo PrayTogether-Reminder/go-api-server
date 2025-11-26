@@ -1,8 +1,9 @@
 package auth
 
 import (
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
 	"net/http"
+
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
 )
 
 const (

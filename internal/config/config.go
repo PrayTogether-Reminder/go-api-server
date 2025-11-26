@@ -18,6 +18,7 @@ type Config struct {
 	JWT      JWTConfig
 	CORS     CORSConfig
 	Server   ServerConfig
+	SMTP     SMTPConfig
 }
 
 type AppConfig struct {
@@ -60,6 +61,14 @@ type ServerConfig struct {
 	GracefulTimeout time.Duration
 }
 
+type SMTPConfig struct {
+	Host     string
+	Port     int
+	Username string
+	Password string
+	From     string
+}
+
 func Load(env string) (*Config, error) {
 	if err := loadEnvFile(env); err != nil {
 		return nil, fmt.Errorf("환경 변수 로드 실패: %w", err)
@@ -100,6 +109,13 @@ func Load(env string) (*Config, error) {
 			WriteTimeout:    getEnvAsDuration("SERVER_WRITE_TIMEOUT", "15s"),
 			IdleTimeout:     getEnvAsDuration("SERVER_IDLE_TIMEOUT", "60s"),
 			GracefulTimeout: getEnvAsDuration("GRACEFUL_TIMEOUT", "30s"),
+		},
+		SMTP: SMTPConfig{
+			Host:     getEnv("SMTP_HOST", ""),
+			Port:     getEnvAsInt("SMTP_PORT", 587),
+			Username: getEnv("SMTP_USERNAME", ""),
+			Password: getEnv("SMTP_PASSWORD", ""),
+			From:     getEnv("SMTP_FROM", ""),
 		},
 	}
 

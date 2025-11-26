@@ -2,11 +2,14 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth/otp"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/token"
 	"gorm.io/gorm"
@@ -18,14 +21,16 @@ type AuthUseCase struct {
 	memberService *member.MemberService
 	tokenManager  token.Manager
 	authService   *AuthService
+	otpService    *otp.Service
 }
 
-func NewAuthUseCase(db *gorm.DB, memberService *member.MemberService, tokenManager token.Manager, authService *AuthService) *AuthUseCase {
+func NewAuthUseCase(db *gorm.DB, memberService *member.MemberService, tokenManager token.Manager, authService *AuthService, otpService *otp.Service) *AuthUseCase {
 	return &AuthUseCase{
 		db:            db,
 		memberService: memberService,
 		tokenManager:  tokenManager,
 		authService:   authService,
+		otpService:    otpService,
 	}
 }
 
@@ -77,4 +82,21 @@ func (u *AuthUseCase) Signup(ctx context.Context, request *SignupRequest) error 
 		log.Info("Member created successfully", "email", logger.MaskEmail(request.Email))
 		return nil
 	})
+}
+
+func (u *AuthUseCase) RequestEmailOTP(ctx context.Context, request *EmailOtpRequest) (*sharedHttp.MessageResponse, error) {
+	exists, err := u.memberService.ExistsByEmail(ctx, u.db, request.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	if exists {
+		return nil, fmt.Errorf("이미 존재하는 이메일입니다: %w", member.ErrMemberAlreadyExists)
+	}
+
+	if err := u.otpService.SendToEmail(ctx, request.Email); err != nil {
+		return nil, err
+	}
+
+	return &sharedHttp.MessageResponse{Message: "인증 번호를 요청했습니다."}, nil
 }
