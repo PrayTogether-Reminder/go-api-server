@@ -37,13 +37,13 @@ func (r *RoomRepository) FindRoomInfosByMemberIDInitial(ctx context.Context, db 
 			room.id,
 			room.name,
 			room.description,
-			mr.created_at as joined_time,
+			mr.created_time as joined_time,
 			mr.is_notification,
 			0 as member_count
 		`).
 		Joins("JOIN room ON mr.room_id = room.id").
 		Where("mr.member_id = ?", memberID).
-		Order("mr.created_at DESC").
+		Order("mr.created_time DESC").
 		Limit(limit).
 		Scan(&results).Error
 
@@ -64,13 +64,13 @@ func (r *RoomRepository) FindRoomInfosByMemberIDAfter(ctx context.Context, db *g
 			room.id,
 			room.name,
 			room.description,
-			mr.created_at as joined_time,
+			mr.created_time as joined_time,
 			mr.is_notification,
 			0 as member_count
 		`).
 		Joins("JOIN room ON mr.room_id = room.id").
-		Where("mr.member_id = ? AND mr.created_at < ?", memberID, after).
-		Order("mr.created_at DESC").
+		Where("mr.member_id = ? AND mr.created_time < ?", memberID, after).
+		Order("mr.created_time DESC").
 		Limit(limit).
 		Scan(&results).Error
 
