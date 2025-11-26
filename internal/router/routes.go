@@ -62,6 +62,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 		authV1.POST("/login", authHandler.Login)
 		authV1.POST("/otp/email", authHandler.RequestEmailOTP)
 		authV1.POST("/otp/email/verification", authHandler.VerifyEmailOTP)
+		authV1.DELETE("/withdraw", middleware.JWT(cfg), authHandler.Withdraw)
 	}
 
 	memberV1 := router.Group("/api/v1/members")

@@ -70,3 +70,15 @@ func (m *MemberRepository) FindByID(ctx context.Context, db *gorm.DB, ID int64) 
 	}
 	return &member, nil
 }
+
+// Delete - 회원 삭제
+func (m *MemberRepository) Delete(ctx context.Context, db *gorm.DB, memberID int64) error {
+	result := db.WithContext(ctx).Delete(&model.Member{}, memberID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}

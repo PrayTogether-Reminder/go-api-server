@@ -122,3 +122,23 @@ func (u *AuthUseCase) VerifyEmailOTP(ctx context.Context, request *VerifyOtpRequ
 	log.Info("OTP 검증 성공", "email", logger.MaskEmail(request.Email))
 	return &sharedHttp.MessageResponse{Message: "인증에 성공했습니다."}, nil
 }
+
+func (u *AuthUseCase) Withdraw(ctx context.Context, memberID int64) (*sharedHttp.MessageResponse, error) {
+	log := logger.FromContext(ctx)
+
+	err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
+		if err := u.memberService.DeleteMember(ctx, tx, memberID); err != nil {
+			log.Error("회원 탈퇴 실패", "memberID", memberID, "error", err)
+			return err
+		}
+
+		log.Info("회원 탈퇴 성공", "memberID", memberID)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &sharedHttp.MessageResponse{Message: "회원 탈퇴를 완료했습니다.\n 함께 기도해 주셔 감사합니다."}, nil
+}

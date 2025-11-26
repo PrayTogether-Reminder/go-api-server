@@ -102,3 +102,23 @@ func (a *AuthHandler) VerifyEmailOTP(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+func (a *AuthHandler) Withdraw(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	response, err := a.authUseCase.Withdraw(c.Request.Context(), memberID)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
