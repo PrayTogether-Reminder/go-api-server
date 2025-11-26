@@ -53,12 +53,12 @@ func init() {
 	sharedError.RegisterDomainErrorResponse(generateAccessToken, sharedError.ErrorResponse{
 		Status:  http.StatusInternalServerError,
 		Code:    "TOKEN-004",
-		Message: "액세스 토큰 생성에 실패했습니다.",
+		Message: "인증에 실패했습니다.",
 	})
 
 	sharedError.RegisterDomainErrorResponse(generateRefreshToken, sharedError.ErrorResponse{
 		Status:  http.StatusInternalServerError,
 		Code:    "TOKEN-005",
-		Message: "리프레시 토큰 생성에 실패했습니다.",
+		Message: "인증에 실패했습니다.",
 	})
 }

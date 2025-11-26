@@ -5,12 +5,13 @@ import (
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/token"
 	"gorm.io/gorm"
 )
 
 // setupTestEnvironment creates all dependencies needed for auth handler tests
 // Returns the handler, mock token manager
-func setupTestEnvironment(t *testing.T) (*auth.AuthHandler, *testutil.MockTokenManager) {
+func setupTestEnvironment(t *testing.T) (*auth.AuthHandler, *token.JWTManager) {
 	t.Helper()
 
 	// Setup test database
@@ -19,14 +20,17 @@ func setupTestEnvironment(t *testing.T) (*auth.AuthHandler, *testutil.MockTokenM
 		testutil.CleanupTestDB(t, db)
 	})
 
+	config := testutil.NewTestConfig()
 	// Setup dependencies with mock SMTP
-	memberRepo := testutil.NewMemberRepository(db)
+	memberRepo := testutil.NewMemberRepository()
 	memberService := testutil.NewMemberService(memberRepo)
-	mockTokenManager := testutil.NewMockTokenManager()
+	mockTokenManager := testutil.NewRealJWTManager(config)
 	authService := auth.NewAuthService()
 	otpService, _ := testutil.NewTestOTPService()
+	refreshTokenRepo := auth.NewRefreshTokenRepository()
+	refreshTokenService := auth.NewRefreshTokenService(refreshTokenRepo)
 
-	authUseCase := auth.NewAuthUseCase(db, memberService, mockTokenManager, authService, otpService)
+	authUseCase := auth.NewAuthUseCase(db, memberService, mockTokenManager, authService, otpService, refreshTokenService)
 	authHandler := auth.NewAuthHandler(authUseCase)
 
 	return authHandler, mockTokenManager
@@ -43,14 +47,17 @@ func setupTestEnvironmentWithDB(t *testing.T) (*auth.AuthHandler, *gorm.DB) {
 		testutil.CleanupTestDB(t, db)
 	})
 
+	config := testutil.NewTestConfig()
 	// Setup dependencies
-	memberRepo := testutil.NewMemberRepository(db)
+	memberRepo := testutil.NewMemberRepository()
 	memberService := testutil.NewMemberService(memberRepo)
-	mockTokenManager := testutil.NewMockTokenManager()
+	mockTokenManager := testutil.NewRealJWTManager(config)
 	authService := auth.NewAuthService()
 	otpService, _ := testutil.NewTestOTPService()
+	refreshTokenRepo := auth.NewRefreshTokenRepository()
+	refreshTokenService := auth.NewRefreshTokenService(refreshTokenRepo)
 
-	authUseCase := auth.NewAuthUseCase(db, memberService, mockTokenManager, authService, otpService)
+	authUseCase := auth.NewAuthUseCase(db, memberService, mockTokenManager, authService, otpService, refreshTokenService)
 	authHandler := auth.NewAuthHandler(authUseCase)
 
 	return authHandler, db
