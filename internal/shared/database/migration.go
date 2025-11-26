@@ -33,7 +33,7 @@ func Migrate(db *gorm.DB, cfg *config.Config) error {
 
 	// Order matters: drop in reverse dependency order (FK constraints)
 	// member_room → room, member (FK 참조하는 테이블 먼저)
-	tableNames := []string{"member_room", "room", "member"}
+	tableNames := []string{"member_room", "room", "refresh_token", "member"}
 
 	for _, tableName := range tableNames {
 		// Check if table exists (Oracle)
@@ -72,7 +72,8 @@ func runAutoMigrate(db *gorm.DB) error {
 		&model.Member{},
 
 		// Dependent tables (with foreign keys)
-		&model.MemberRoom{}, // FK: room_id, member_id
+		&model.RefreshToken{}, // FK: member_id
+		&model.MemberRoom{},   // FK: room_id, member_id
 		&model.PrayerTitle{},
 		&model.PrayerContent{},
 	}

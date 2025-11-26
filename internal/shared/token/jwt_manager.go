@@ -3,6 +3,7 @@ package token
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
@@ -27,6 +28,8 @@ type Manager interface {
 	GenerateAccessToken(memberID string, email string) (string, error)
 	GenerateRefreshToken(memerID string, email string) (string, error)
 	ValidateToken(tokenString string) (*Claims, error)
+	ExtractMemberID(tokenString string) (int64, error)
+	ExtractExpiration(tokenString string) (time.Time, error)
 }
 
 type JWTManager struct {
@@ -65,7 +68,7 @@ func (m *JWTManager) GenerateAccessToken(memberID, email string) (string, error)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString(m.secret)
 	if err != nil {
-		return "", fmt.Errorf("%w: %v", ErrGenerateAccessToken, err)
+		return "", fmt.Errorf("AccessToken 생성 실패 %w: %v", ErrGenerateAccessToken, err)
 	}
 	return signedToken, nil
 }
@@ -91,7 +94,7 @@ func (m *JWTManager) GenerateRefreshToken(memberID string, email string) (string
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString(m.secret)
 	if err != nil {
-		return "", fmt.Errorf("%w: %v", ErrGenerateRefreshToken, err)
+		return "", fmt.Errorf("RefreshToken 생성 실패 %w: %v", ErrGenerateRefreshToken, err)
 	}
 	return signedToken, nil
 }
@@ -104,19 +107,60 @@ func (m *JWTManager) ValidateToken(tokenString string) (*Claims, error) {
 	})
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			return nil, fmt.Errorf("%w: %v", ErrExpiredToken, err)
+			return nil, fmt.Errorf("JWT 토큰 만료 %w : %v", ErrExpiredToken, err)
 		}
-		return nil, fmt.Errorf("%w: %v", ErrInvalidToken, err)
+		return nil, fmt.Errorf("JWT 검증 오류 %w : %v", ErrInvalidToken, err)
 	}
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok {
-		return nil, ErrInvalidClaims
+		return nil, fmt.Errorf("JWT 페이로드 오류 %w", ErrInvalidClaims)
 	}
 
 	if !token.Valid {
-		return nil, ErrInvalidToken
+		return nil, fmt.Errorf("JWT 검증 오류 %w : %v", ErrInvalidToken, err)
 	}
 
 	return claims, nil
+}
+
+// ExtractMemberID extracts memberID from token without full validation
+// Used for reissue token flow where we need memberID before validation
+func (m *JWTManager) ExtractMemberID(tokenString string) (int64, error) {
+	parser := jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name}))
+
+	token, _, err := parser.ParseUnverified(tokenString, &Claims{})
+	if err != nil {
+		return 0, fmt.Errorf("JWT 토큰 파싱 오류 %w: %v", ErrInvalidToken, err)
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		return 0, fmt.Errorf("JWT 페이로드 오류 %w", ErrInvalidClaims)
+	}
+
+	memberID, err := strconv.ParseInt(claims.MemberID, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("MemberID 변환 오류 %w: %v", ErrInvalidClaims, err)
+	}
+
+	return memberID, nil
+}
+
+// ExtractExpiration extracts expiration time from token without full validation
+// Used for storing refresh token expiration time
+func (m *JWTManager) ExtractExpiration(tokenString string) (time.Time, error) {
+	parser := jwt.NewParser(jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name}))
+
+	token, _, err := parser.ParseUnverified(tokenString, &Claims{})
+	if err != nil {
+		return time.Time{}, fmt.Errorf("JWT 토큰 파싱 오류 %w: %v", ErrInvalidToken, err)
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		return time.Time{}, fmt.Errorf("JWT 페이로드 오류 %w", ErrInvalidClaims)
+	}
+
+	return time.Unix(claims.ExpiresAt, 0), nil
 }

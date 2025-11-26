@@ -25,3 +25,14 @@ type VerifyOtpRequest struct {
 	Email string `json:"email" binding:"required,email"`
 	Otp   string `json:"otp" binding:"required"`
 }
+
+// AuthTokenReissueRequest - 토큰 재발급 요청 DTO
+type AuthTokenReissueRequest struct {
+	RefreshToken string `json:"refreshToken" binding:"required"`
+}
+
+// AuthTokenReissueResponse - 토큰 재발급 응답 DTO
+type AuthTokenReissueResponse struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}

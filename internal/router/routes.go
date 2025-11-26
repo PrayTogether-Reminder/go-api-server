@@ -27,6 +27,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	roomRepository := room.NewRoomRepository()
 	memberRoomRepository := room.NewMemberRoomRepository()
 	prayerRepository := prayer.NewPrayerRepository()
+	refreshTokenRepository := auth.NewRefreshTokenRepository()
 
 	// OTP dependencies
 	otpCache := otp.NewInMemoryCache()
@@ -40,12 +41,13 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	// service
 	memberService := member.NewMemberService(memberRepo)
 	authService := auth.NewAuthService()
+	refreshTokenService := auth.NewRefreshTokenService(refreshTokenRepository)
 	roomService := room.NewRoomService(roomRepository, memberRoomRepository, memberService)
 	prayerService := prayer.NewPrayerService(prayerRepository)
 
 	// usecase
 	memberUseCase := member.NewMemberUseCase(db.DB, memberService)
-	authUseCase := auth.NewAuthUseCase(db.DB, memberService, tokenManager, authService, otpService)
+	authUseCase := auth.NewAuthUseCase(db.DB, memberService, tokenManager, authService, otpService, refreshTokenService)
 	roomUseCase := room.NewRoomUseCase(db.DB, roomService)
 	prayerUseCase := prayer.NewPrayerUseCase(db.DB, prayerService, roomService, memberService)
 
@@ -62,6 +64,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 		authV1.POST("/login", authHandler.Login)
 		authV1.POST("/otp/email", authHandler.RequestEmailOTP)
 		authV1.POST("/otp/email/verification", authHandler.VerifyEmailOTP)
+		authV1.POST("/reissue-token", authHandler.ReissueToken)
 		authV1.DELETE("/withdraw", middleware.JWT(cfg), authHandler.Withdraw)
 	}
 
