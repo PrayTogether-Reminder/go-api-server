@@ -82,3 +82,25 @@ func (m *MemberRepository) Delete(ctx context.Context, db *gorm.DB, memberID int
 	}
 	return nil
 }
+
+// UpdateFields - 특정 필드 업데이트
+func (m *MemberRepository) UpdateFields(ctx context.Context, db *gorm.DB, memberID int64, updates map[string]any) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	result := db.WithContext(ctx).
+		Model(&model.Member{}).
+		Where("id = ?", memberID).
+		Updates(updates)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
+}

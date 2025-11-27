@@ -105,3 +105,27 @@ func (s *MemberService) DeleteMember(ctx context.Context, db *gorm.DB, memberID 
 
 	return nil
 }
+
+// UpdateProfile - 회원 프로필 업데이트
+func (s *MemberService) UpdateProfile(ctx context.Context, db *gorm.DB, memberID int64, name, phoneNumber *string) error {
+	updates := map[string]any{}
+	if name != nil {
+		updates["name"] = *name
+	}
+	if phoneNumber != nil {
+		updates["phone_number"] = *phoneNumber
+	}
+
+	if len(updates) == 0 {
+		return nil
+	}
+
+	if err := s.memberRepository.UpdateFields(ctx, db, memberID, updates); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("회원을 찾을 수 없습니다: %w", ErrMemberNotFound)
+		}
+		return fmt.Errorf("회원 정보 수정 실패: %w", err)
+	}
+
+	return nil
+}

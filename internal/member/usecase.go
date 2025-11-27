@@ -3,7 +3,9 @@ package member
 import (
 	"context"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
-
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
+	sharedDomain "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/domain"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"gorm.io/gorm"
 )
 
@@ -33,4 +35,25 @@ func (u *MemberUseCase) GetMemberByEmail(ctx context.Context, email string) (*mo
 // Signup - 신규 회원 가입 유스케이스
 func (u *MemberUseCase) Signup(ctx context.Context, member *model.Member) error {
 	return u.memberService.CreateMember(ctx, u.db, member)
+}
+
+// UpdateProfile - 내 프로필 수정 유스케이스
+func (u *MemberUseCase) UpdateProfile(ctx context.Context, memberID int64, request *UpdateProfileRequest) (*sharedHttp.MessageResponse, error) {
+	var normalizedPhone *string
+	if request.PhoneNumber != nil {
+		phone, err := sharedDomain.NewPhoneNumber(*request.PhoneNumber)
+		if err != nil {
+			return nil, err
+		}
+		formatted := phone.String()
+		normalizedPhone = &formatted
+	}
+
+	if err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
+		return u.memberService.UpdateProfile(ctx, tx, memberID, request.Name, normalizedPhone)
+	}); err != nil {
+		return nil, err
+	}
+
+	return &sharedHttp.MessageResponse{Message: "프로필을 변경했습니다."}, nil
 }
