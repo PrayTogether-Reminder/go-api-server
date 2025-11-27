@@ -7,10 +7,10 @@ type InviteMembersRequest struct {
 }
 
 // InvitationInfoScrollResponse represents the response of invitation list
-//type InvitationInfoScrollResponse struct {
-//	Invitations []InvitationInfo `json:"invitations"`
-//}
-//
+type InvitationInfoScrollResponse struct {
+	Invitations []InvitationInfo `json:"invitations"`
+}
+
 //// InvitationStatusUpdateRequest represents the request to update invitation status
 //type InvitationStatusUpdateRequest struct {
 //	Status string `json:"status" binding:"required,oneof=ACCEPTED REJECTED"`

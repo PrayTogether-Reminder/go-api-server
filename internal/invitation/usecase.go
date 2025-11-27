@@ -83,18 +83,19 @@ func (uc *InvitationUseCase) InviteMembersToRoom(ctx context.Context, inviterMem
 	return result, nil
 }
 
-//// GetInvitationInfoScroll retrieves pending invitation infos for a member
-//func (uc *InvitationUseCase) GetInvitationInfoScroll(ctx context.Context, memberID int64) (*InvitationInfoScrollResponse, error) {
-//	log := logger.FromContext(ctx)
-//	log.Info("초대 목록 조회", "memberID", memberID)
-//
-//	infos, err := uc.invitationService.FetchInvitationInfosByInviteeID(ctx, uc.db, memberID)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	return &InvitationInfoScrollResponse{Invitations: infos}, nil
-//}
+// GetInvitationInfoScroll retrieves pending invitation infos for a member
+func (uc *InvitationUseCase) GetInvitationInfoScroll(ctx context.Context, memberID int64) (*InvitationInfoScrollResponse, error) {
+	log := logger.FromContext(ctx)
+	log.Info("초대 목록 조회 시작")
+
+	infos, err := uc.invitationService.FetchInvitationInfosByInviteeID(ctx, uc.db, memberID)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("초대 목록 조회 완료")
+	return &InvitationInfoScrollResponse{Invitations: infos}, nil
+}
 
 // UpdateInvitationStatus updates the status of an invitation (accept or reject)
 //

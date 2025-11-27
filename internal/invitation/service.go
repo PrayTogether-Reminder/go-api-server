@@ -70,14 +70,14 @@ func (s *InvitationService) CreatePending(ctx context.Context, db *gorm.DB, invi
 }
 
 // FetchInvitationInfosByInviteeID retrieves pending invitation infos for a member
-//func (s *InvitationService) FetchInvitationInfosByInviteeID(ctx context.Context, db *gorm.DB, inviteeID int64) ([]InvitationInfo, error) {
-//	infos, err := s.invitationRepository.FindInfosByInviteeIDAndStatus(ctx, db, inviteeID, model.InvitationPending)
-//	if err != nil {
-//		return nil, fmt.Errorf("failed to fetch invitation infos: %w", err)
-//	}
-//	return infos, nil
-//}
-//
+func (s *InvitationService) FetchInvitationInfosByInviteeID(ctx context.Context, db *gorm.DB, inviteeID int64) ([]InvitationInfo, error) {
+	infos, err := s.invitationRepository.FindInfosByInviteeIDAndStatus(ctx, db, inviteeID, model.InvitationPending)
+	if err != nil {
+		return nil, fmt.Errorf("기도방 초대 목록 조회 실패: %w", err)
+	}
+	return infos, nil
+}
+
 //// FetchByInviteeIDAndID retrieves an invitation by invitee ID and invitation ID
 //func (s *InvitationService) FetchByInviteeIDAndID(ctx context.Context, db *gorm.DB, inviteeID, invitationID int64) (*model.Invitation, error) {
 //	invitation, err := s.invitationRepository.FindByInviteeIDAndID(ctx, db, inviteeID, invitationID)

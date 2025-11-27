@@ -45,29 +45,29 @@ func (r *InvitationRepository) CreateAll(ctx context.Context, db *gorm.DB, invit
 //}
 
 // FindInfosByInviteeIDAndStatus retrieves invitation infos by invitee ID and status
-//func (r *InvitationRepository) FindInfosByInviteeIDAndStatus(ctx context.Context, db *gorm.DB, inviteeID int64, status model.InvitationStatus) ([]InvitationInfo, error) {
-//	var results []InvitationInfo
-//
-//	err := db.WithContext(ctx).
-//		Table("invitation i").
-//		Select(`
-//			i.id as invitation_id,
-//			i.inviter_name,
-//			r.name as room_name,
-//			r.description as room_description,
-//			i.created_time
-//		`).
-//		Joins("JOIN room r ON i.room_id = r.id").
-//		Where("i.invitee_id = ? AND i.status = ?", inviteeID, status).
-//		Order("i.created_time DESC").
-//		Scan(&results).Error
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	return results, nil
-//}
+func (r *InvitationRepository) FindInfosByInviteeIDAndStatus(ctx context.Context, db *gorm.DB, inviteeID int64, status model.InvitationStatus) ([]InvitationInfo, error) {
+	var results []InvitationInfo
+
+	err := db.WithContext(ctx).
+		Table("invitation i").
+		Select(`
+			i.id as invitation_id,
+			i.inviter_name,
+			r.name as room_name,
+			r.description as room_description,
+			i.created_time
+		`).
+		Joins("JOIN room r ON i.room_id = r.id").
+		Where("i.invitee_id = ? AND i.status = ?", inviteeID, status).
+		Order("i.created_time DESC").
+		Scan(&results).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
 
 // FindByRoomIDAndStatusAndInviteeIDs retrieves invitations by room ID, status, and invitee IDs
 func (r *InvitationRepository) FindByRoomIDAndStatusAndInviteeIDs(ctx context.Context, db *gorm.DB, roomID int64, status model.InvitationStatus, inviteeIDs []int64) ([]*model.Invitation, error) {

@@ -6,6 +6,7 @@ import (
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth/otp"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/invitation"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/meta"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/prayer"
@@ -103,6 +104,15 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 		prayerV1.PUT("/:titleId/contents/:contentId", prayerHandler.UpdatePrayerContent)
 		prayerV1.DELETE("/:titleId/contents/:contentId", prayerHandler.DeletePrayerContent)
 	}
+
+	// Invitation API v1 routes
+	invitationV1 := router.Group("/api/v1/invitations")
+	invitationV1.Use(middleware.JWT(cfg))
+	{
+		invitationV1.GET("", invitationHandler.GetInvitations)
+		//invitationV1.PATCH("/:invitationId", invitationHandler.RespondToInvitation)
+	}
+
 	// Invitation API v2 routes
 	invitationV2 := router.Group("/api/v2/invitations")
 	invitationV2.Use(middleware.JWT(cfg))

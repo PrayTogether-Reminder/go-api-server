@@ -45,25 +45,25 @@ func (h *InvitationHandler) InviteMembers(c *gin.Context) {
 }
 
 // GetInvitations handles GET /api/v1/invitations - 내가 받은 초대 목록 조회
-//func (h *InvitationHandler) GetInvitations(c *gin.Context) {
-//	memberID, ok := sharedHttp.RequireMemberID(c)
-//	if !ok {
-//		return
-//	}
-//
-//	response, err := h.invitationUseCase.GetInvitationInfoScroll(c.Request.Context(), memberID)
-//	if err != nil {
-//		if resp, ok := sharedError.ResolveDomainError(err); ok {
-//			sharedHttp.RespondError(c, err, resp)
-//			return
-//		}
-//
-//		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
-//		return
-//	}
-//
-//	c.JSON(http.StatusOK, response)
-//}
+func (h *InvitationHandler) GetInvitations(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	response, err := h.invitationUseCase.GetInvitationInfoScroll(c.Request.Context(), memberID)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
 
 // RespondToInvitation handles PATCH /api/v1/invitations/:invitationId - 초대 응답
 //func (h *InvitationHandler) RespondToInvitation(c *gin.Context) {
