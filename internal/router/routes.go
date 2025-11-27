@@ -73,6 +73,8 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	memberV1.Use(middleware.JWT(cfg))
 	{
 		memberV1.GET("/me", memberHandler.FetchProfile)
+		memberV1.PATCH("/me", memberHandler.UpdateProfile)
+		memberV1.GET("/search", memberHandler.SearchMembers)
 	}
 
 	roomV1 := router.Group("/api/v1/rooms")

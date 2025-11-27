@@ -2,6 +2,8 @@ package member
 
 import (
 	"context"
+	"strings"
+
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 
 	"gorm.io/gorm"
@@ -9,6 +11,13 @@ import (
 
 // MemberRepository - Member 데이터 접근 계층
 type MemberRepository struct {
+}
+
+// SearchMemberResult - 회원 검색 결과 프로젝션
+type SearchMemberResult struct {
+	ID          int64
+	Name        string
+	PhoneNumber string
 }
 
 // NewMemberRepository - MemberRepository 생성자
@@ -81,4 +90,45 @@ func (m *MemberRepository) Delete(ctx context.Context, db *gorm.DB, memberID int
 		return gorm.ErrRecordNotFound
 	}
 	return nil
+}
+
+// UpdateFields - 특정 필드 업데이트
+func (m *MemberRepository) UpdateFields(ctx context.Context, db *gorm.DB, memberID int64, updates map[string]any) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	result := db.WithContext(ctx).
+		Model(&model.Member{}).
+		Where("id = ?", memberID).
+		Updates(updates)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
+}
+
+// SearchByName - 이름으로 회원 검색 (부분 일치)
+func (m *MemberRepository) SearchByName(ctx context.Context, db *gorm.DB, name string) ([]SearchMemberResult, error) {
+	var results []SearchMemberResult
+
+	query := db.WithContext(ctx).
+		Model(&model.Member{}).
+		Select("id, name, phone_number")
+
+	if trimmed := strings.TrimSpace(name); trimmed != "" {
+		query = query.Where("name LIKE ?", "%"+trimmed+"%")
+	}
+
+	if err := query.Order("id ASC").Find(&results).Error; err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
