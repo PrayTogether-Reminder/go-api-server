@@ -171,6 +171,21 @@ func (r *MemberRoomRepository) IsExistMemberInRoom(ctx context.Context, db *gorm
 	return count > 0, nil
 }
 
+// FindMemberIDsByRoomID fetches all member IDs in a room
+func (r *MemberRoomRepository) FindMemberIDsByRoomID(ctx context.Context, db *gorm.DB, roomID int64) ([]int64, error) {
+	var memberIDs []int64
+	err := db.WithContext(ctx).
+		Model(&model.MemberRoom{}).
+		Where("room_id = ?", roomID).
+		Pluck("member_id", &memberIDs).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return memberIDs, nil
+}
+
 func (r *MemberRoomRepository) FindMemberRooms(ctx context.Context, db *gorm.DB, roomID int64) ([]RoomMember, error) {
 	var results []RoomMember
 	err := db.WithContext(ctx).

@@ -28,6 +28,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	memberRoomRepository := room.NewMemberRoomRepository()
 	prayerRepository := prayer.NewPrayerRepository()
 	refreshTokenRepository := auth.NewRefreshTokenRepository()
+	invitationRepository := invitation.NewInvitationRepository()
 
 	// OTP dependencies
 	otpCache := otp.NewInMemoryCache()
@@ -44,18 +45,21 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	refreshTokenService := auth.NewRefreshTokenService(refreshTokenRepository)
 	roomService := room.NewRoomService(roomRepository, memberRoomRepository, memberService)
 	prayerService := prayer.NewPrayerService(prayerRepository)
+	invitationService := invitation.NewInvitationService(invitationRepository)
 
 	// usecase
 	memberUseCase := member.NewMemberUseCase(db.DB, memberService)
 	authUseCase := auth.NewAuthUseCase(db.DB, memberService, tokenManager, authService, otpService, refreshTokenService)
 	roomUseCase := room.NewRoomUseCase(db.DB, roomService)
 	prayerUseCase := prayer.NewPrayerUseCase(db.DB, prayerService, roomService, memberService)
+	invitationUseCase := invitation.NewInvitationUseCase(db.DB, invitationService, roomService, memberService)
 
 	// handler
 	authHandler := auth.NewAuthHandler(authUseCase)
 	memberHandler := member.NewMemberHandler(memberUseCase)
 	roomHandler := room.NewRoomHandler(roomUseCase)
 	prayerHandler := prayer.NewPrayerHandler(prayerUseCase)
+	invitationHandler := invitation.NewInvitationHandler(invitationUseCase)
 
 	// API v1 routes
 	authV1 := router.Group("/api/v1/auth")
@@ -98,5 +102,11 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 		prayerV1.GET("/:titleId/contents", prayerHandler.FetchPrayerContents)
 		prayerV1.PUT("/:titleId/contents/:contentId", prayerHandler.UpdatePrayerContent)
 		prayerV1.DELETE("/:titleId/contents/:contentId", prayerHandler.DeletePrayerContent)
+	}
+	// Invitation API v2 routes
+	invitationV2 := router.Group("/api/v2/invitations")
+	invitationV2.Use(middleware.JWT(cfg))
+	{
+		invitationV2.POST("", invitationHandler.InviteMembers)
 	}
 }

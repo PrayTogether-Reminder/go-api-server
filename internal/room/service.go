@@ -178,6 +178,31 @@ func (s *RoomService) ValidateMemberExistInRoom(ctx context.Context, tx *gorm.DB
 	return nil
 }
 
+// ValidateMembersNotExistInRoom ensures none of the given member IDs already belong to the room.
+func (s *RoomService) ValidateMembersNotExistInRoom(ctx context.Context, tx *gorm.DB, memberIDs []int64, roomID int64) error {
+	if len(memberIDs) == 0 {
+		return nil
+	}
+
+	existingMemberIDs, err := s.memberRoomRepository.FindMemberIDsByRoomID(ctx, tx, roomID)
+	if err != nil {
+		return fmt.Errorf("방 멤버 조회 실패: %w", err)
+	}
+
+	existing := make(map[int64]struct{}, len(existingMemberIDs))
+	for _, id := range existingMemberIDs {
+		existing[id] = struct{}{}
+	}
+
+	for _, memberID := range memberIDs {
+		if _, ok := existing[memberID]; ok {
+			return fmt.Errorf("이미 방에 가입된 회원이 있습니다: %w", ErrMemberAlreadyInRoom)
+		}
+	}
+
+	return nil
+}
+
 func (s *RoomService) GetRoomByID(ctx context.Context, tx *gorm.DB, roomID int64) (*model.Room, error) {
 	room, err := s.roomRepository.FindByID(ctx, tx, roomID)
 	if err != nil {
