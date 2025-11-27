@@ -32,17 +32,17 @@ func (r *InvitationRepository) CreateAll(ctx context.Context, db *gorm.DB, invit
 }
 
 // FindByInviteeIDAndID retrieves an invitation by invitee ID and invitation ID
-//func (r *InvitationRepository) FindByInviteeIDAndID(ctx context.Context, db *gorm.DB, inviteeID, invitationID int64) (*model.Invitation, error) {
-//	var invitation model.Invitation
-//	err := db.WithContext(ctx).
-//		Where("invitee_id = ? AND id = ?", inviteeID, invitationID).
-//		First(&invitation).Error
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//	return &invitation, nil
-//}
+func (r *InvitationRepository) FindByInviteeIDAndID(ctx context.Context, db *gorm.DB, inviteeID, invitationID int64) (*model.Invitation, error) {
+	var invitation model.Invitation
+	err := db.WithContext(ctx).
+		Where("invitee_id = ? AND id = ?", inviteeID, invitationID).
+		First(&invitation).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return &invitation, nil
+}
 
 // FindInfosByInviteeIDAndStatus retrieves invitation infos by invitee ID and status
 func (r *InvitationRepository) FindInfosByInviteeIDAndStatus(ctx context.Context, db *gorm.DB, inviteeID int64, status model.InvitationStatus) ([]InvitationInfo, error) {
@@ -88,6 +88,6 @@ func (r *InvitationRepository) FindByRoomIDAndStatusAndInviteeIDs(ctx context.Co
 }
 
 // Update saves the invitation
-//func (r *InvitationRepository) Update(ctx context.Context, db *gorm.DB, invitation *model.Invitation) error {
-//	return db.WithContext(ctx).Save(invitation).Error
-//}
+func (r *InvitationRepository) Update(ctx context.Context, db *gorm.DB, invitation *model.Invitation) error {
+	return db.WithContext(ctx).Save(invitation).Error
+}

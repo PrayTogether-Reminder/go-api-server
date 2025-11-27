@@ -1,11 +1,11 @@
 package model
 
 import (
+	"fmt"
 	"time"
 )
 
 // InvitationStatus represents the status of an invitation
-// Java의 InvitationStatus enum과 동일
 type InvitationStatus string
 
 const (
@@ -35,12 +35,31 @@ func (*Invitation) TableName() string {
 	return "invitation"
 }
 
-// validatePendingStatus checks if the invitation is in PENDING status
-// Java: private void validatePendingStatus() throws AlreadyRespondedInvitationException
-//func (i *Invitation) validatePendingStatus() error {
-//	if i.Status != InvitationPending {
-//		// Java에서는 AlreadyRespondedInvitationException(this.id, this.status)를 던짐
-//		return fmt.Errorf("already responded invitation: id=%d, status=%s", i.ID, i.Status)
-//	}
-//	return nil
-//}
+func (i *Invitation) Accept() error {
+	if err := i.validatePendingStatus(); err != nil {
+		return err
+	}
+
+	now := time.Now()
+	i.Status = InvitationAccepted
+	i.ResponseTime = &now
+	return nil
+}
+
+func (i *Invitation) Reject() error {
+	if err := i.validatePendingStatus(); err != nil {
+		return err
+	}
+
+	now := time.Now()
+	i.Status = InvitationRejected
+	i.ResponseTime = &now
+	return nil
+}
+
+func (i *Invitation) validatePendingStatus() error {
+	if i.Status != InvitationPending {
+		return fmt.Errorf("이미 응답한 초대장 입니다: inviationId=%d, status=%s", i.ID, i.Status)
+	}
+	return nil
+}

@@ -213,3 +213,12 @@ func (s *RoomService) GetRoomByID(ctx context.Context, tx *gorm.DB, roomID int64
 	}
 	return room, nil
 }
+
+// AddMemberToRoom adds a member to a room with the specified role
+func (s *RoomService) AddMemberToRoom(ctx context.Context, tx *gorm.DB, member *model.Member, room *model.Room, role string) error {
+	memberRoom := model.NewRoomMember(member.ID, room.ID, role, true)
+	if err := s.memberRoomRepository.Create(ctx, tx, memberRoom); err != nil {
+		return fmt.Errorf("방 멤버 추가 실패: %w", err)
+	}
+	return nil
+}

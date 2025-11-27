@@ -110,7 +110,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	invitationV1.Use(middleware.JWT(cfg))
 	{
 		invitationV1.GET("", invitationHandler.GetInvitations)
-		//invitationV1.PATCH("/:invitationId", invitationHandler.RespondToInvitation)
+		invitationV1.PATCH("/:invitationId", invitationHandler.RespondToInvitation)
 	}
 
 	// Invitation API v2 routes

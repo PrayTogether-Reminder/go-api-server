@@ -11,7 +11,12 @@ type InvitationInfoScrollResponse struct {
 	Invitations []InvitationInfo `json:"invitations"`
 }
 
-//// InvitationStatusUpdateRequest represents the request to update invitation status
-//type InvitationStatusUpdateRequest struct {
-//	Status string `json:"status" binding:"required,oneof=ACCEPTED REJECTED"`
-//}
+// // InvitationStatusUpdateRequest represents the request to update invitation status
+type InvitationStatusUpdateRequest struct {
+	Status string `json:"status" binding:"required,oneof=ACCEPTED REJECTED"`
+}
+
+// InvitationIDParam is used to bind invitationId path parameter
+type InvitationIDParam struct {
+	InvitationID int64 `uri:"invitationId" binding:"gt=0"`
+}

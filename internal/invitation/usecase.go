@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/room"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
 	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
@@ -98,67 +99,66 @@ func (uc *InvitationUseCase) GetInvitationInfoScroll(ctx context.Context, member
 }
 
 // UpdateInvitationStatus updates the status of an invitation (accept or reject)
-//
-//	func (uc *InvitationUseCase) UpdateInvitationStatus(ctx context.Context, memberID, invitationID int64, request *InvitationStatusUpdateRequest) (*sharedHttp.MessageResponse, error) {
-//		log := logger.FromContext(ctx)
-//		log.Info("초대 응답", "memberID", memberID, "invitationID", invitationID, "status", request.Status)
-//
-//		var result *sharedHttp.MessageResponse
-//		err := database.WithTransaction(ctx, uc.db, func(tx *gorm.DB) error {
-//			// 1. 초대장 조회 및 권한 검증
-//			invitation, err := uc.invitationService.FetchByInviteeIDAndID(ctx, tx, memberID, invitationID)
-//			if err != nil {
-//				return err
-//			}
-//
-//			// 2. 상태별 처리
-//			status := model.InvitationStatus(request.Status)
-//			switch status {
-//			case model.InvitationAccepted:
-//				// 수락
-//				if err := uc.invitationService.Accept(ctx, tx, invitation); err != nil {
-//					return err
-//				}
-//
-//				// 방에 자동 가입
-//				room, err := uc.roomService.GetRoomByID(ctx, tx, invitation.RoomID)
-//				if err != nil {
-//					return err
-//				}
-//
-//				invitee, err := uc.memberService.GetByID(ctx, tx, invitation.InviteeID)
-//				if err != nil {
-//					return err
-//				}
-//
-//				if err := uc.roomService.AddMemberToRoom(ctx, tx, invitee, room, model.RoomRoleMember); err != nil {
-//					return err
-//				}
-//
-//				result = &sharedHttp.MessageResponse{Message: "기도방 초대를 수락했습니다."}
-//
-//			case model.InvitationRejected:
-//				// 거절
-//				if err := uc.invitationService.Reject(ctx, tx, invitation); err != nil {
-//					return err
-//				}
-//
-//				result = &sharedHttp.MessageResponse{Message: "기도방 초대를 거절했습니다."}
-//
-//			default:
-//				return fmt.Errorf("invalid invitation status: %s", request.Status)
-//			}
-//
-//			return nil
-//		})
-//
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		log.Info("초대 응답 완료", "memberID", memberID, "invitationID", invitationID, "status", request.Status)
-//		return result, nil
-//	}
+func (uc *InvitationUseCase) UpdateInvitationStatus(ctx context.Context, memberID, invitationID int64, request *InvitationStatusUpdateRequest) (*sharedHttp.MessageResponse, error) {
+	log := logger.FromContext(ctx)
+	log.Info("초대 응답 시작", "memberID", memberID, "invitationID", invitationID, "status", request.Status)
+
+	var result *sharedHttp.MessageResponse
+	err := database.WithTransaction(ctx, uc.db, func(tx *gorm.DB) error {
+		// 1. 초대장 조회 및 권한 검증
+		invitation, err := uc.invitationService.FetchByInviteeIDAndID(ctx, tx, memberID, invitationID)
+		if err != nil {
+			return err
+		}
+
+		// 2. 상태별 처리
+		status := model.InvitationStatus(request.Status)
+		switch status {
+		case model.InvitationAccepted:
+			// 수락
+			if err := uc.invitationService.Accept(ctx, tx, invitation); err != nil {
+				return err
+			}
+
+			// 방에 자동 가입
+			room, err := uc.roomService.GetRoomByID(ctx, tx, invitation.RoomID)
+			if err != nil {
+				return err
+			}
+
+			invitee, err := uc.memberService.GetByID(ctx, tx, invitation.InviteeID)
+			if err != nil {
+				return err
+			}
+
+			if err := uc.roomService.AddMemberToRoom(ctx, tx, invitee, room, model.RoomRoleMember); err != nil {
+				return err
+			}
+
+			result = &sharedHttp.MessageResponse{Message: "기도방 초대를 수락했습니다."}
+
+		case model.InvitationRejected:
+			// 거절
+			if err := uc.invitationService.Reject(ctx, tx, invitation); err != nil {
+				return err
+			}
+
+			result = &sharedHttp.MessageResponse{Message: "기도방 초대를 거절했습니다."}
+
+		default:
+			return ErrInvalidInvitationResponse
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("초대 응답 완료", "memberID", memberID, "invitationID", invitationID, "status", request.Status)
+	return result, nil
+}
 func uniqueInt64s(values []int64) []int64 {
 	if len(values) == 0 {
 		return []int64{}

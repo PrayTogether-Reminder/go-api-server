@@ -66,39 +66,32 @@ func (h *InvitationHandler) GetInvitations(c *gin.Context) {
 }
 
 // RespondToInvitation handles PATCH /api/v1/invitations/:invitationId - 초대 응답
-//func (h *InvitationHandler) RespondToInvitation(c *gin.Context) {
-//	memberID, ok := sharedHttp.RequireMemberID(c)
-//	if !ok {
-//		return
-//	}
-//
-//	// Parse invitation ID from URL
-//	invitationIDStr := c.Param("invitationId")
-//	invitationID, err := strconv.ParseInt(invitationIDStr, 10, 64)
-//	if err != nil || invitationID <= 0 {
-//		sharedHttp.RespondError(c, err, sharedError.ErrorResponse{
-//			Status:  http.StatusBadRequest,
-//			Code:    "INVITATION-003",
-//			Message: "잘 못된 초대장 입니다.",
-//		})
-//		return
-//	}
-//
-//	var request InvitationStatusUpdateRequest
-//	if !sharedHttp.BindJSON(c, &request) {
-//		return
-//	}
-//
-//	response, err := h.invitationUseCase.UpdateInvitationStatus(c.Request.Context(), memberID, invitationID, &request)
-//	if err != nil {
-//		if resp, ok := sharedError.ResolveDomainError(err); ok {
-//			sharedHttp.RespondError(c, err, resp)
-//			return
-//		}
-//
-//		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
-//		return
-//	}
-//
-//	c.JSON(http.StatusOK, response)
-//}
+func (h *InvitationHandler) RespondToInvitation(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	var path InvitationIDParam
+	if !sharedHttp.BindURI(c, &path) {
+		return
+	}
+
+	var request InvitationStatusUpdateRequest
+	if !sharedHttp.BindJSON(c, &request) {
+		return
+	}
+
+	response, err := h.invitationUseCase.UpdateInvitationStatus(c.Request.Context(), memberID, path.InvitationID, &request)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}

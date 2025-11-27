@@ -2,6 +2,7 @@ package invitation
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
@@ -78,40 +79,40 @@ func (s *InvitationService) FetchInvitationInfosByInviteeID(ctx context.Context,
 	return infos, nil
 }
 
-//// FetchByInviteeIDAndID retrieves an invitation by invitee ID and invitation ID
-//func (s *InvitationService) FetchByInviteeIDAndID(ctx context.Context, db *gorm.DB, inviteeID, invitationID int64) (*model.Invitation, error) {
-//	invitation, err := s.invitationRepository.FindByInviteeIDAndID(ctx, db, inviteeID, invitationID)
-//	if err != nil {
-//		if errors.Is(err, gorm.ErrRecordNotFound) {
-//			return nil, ErrInvitationNotFound
-//		}
-//		return nil, fmt.Errorf("failed to fetch invitation: %w", err)
-//	}
-//	return invitation, nil
-//}
-//
-//// Accept accepts an invitation
-//func (s *InvitationService) Accept(ctx context.Context, db *gorm.DB, invitation *model.Invitation) error {
-//	if err := invitation.Accept(); err != nil {
-//		return ErrAlreadyRespondedInvitation
-//	}
-//
-//	if err := s.invitationRepository.Update(ctx, db, invitation); err != nil {
-//		return fmt.Errorf("failed to update invitation: %w", err)
-//	}
-//
-//	return nil
-//}
-//
-//// Reject rejects an invitation
-//func (s *InvitationService) Reject(ctx context.Context, db *gorm.DB, invitation *model.Invitation) error {
-//	if err := invitation.Reject(); err != nil {
-//		return ErrAlreadyRespondedInvitation
-//	}
-//
-//	if err := s.invitationRepository.Update(ctx, db, invitation); err != nil {
-//		return fmt.Errorf("failed to update invitation: %w", err)
-//	}
-//
-//	return nil
-//}
+// FetchByInviteeIDAndID retrieves an invitation by invitee ID and invitation ID
+func (s *InvitationService) FetchByInviteeIDAndID(ctx context.Context, db *gorm.DB, inviteeID, invitationID int64) (*model.Invitation, error) {
+	invitation, err := s.invitationRepository.FindByInviteeIDAndID(ctx, db, inviteeID, invitationID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("기도방 초대장을 찾을 수 없습니다: %w", ErrInvitationNotFound)
+		}
+		return nil, fmt.Errorf("기도방 초대장 조회 실패: %w", err)
+	}
+	return invitation, nil
+}
+
+// Accept accepts an invitation
+func (s *InvitationService) Accept(ctx context.Context, db *gorm.DB, invitation *model.Invitation) error {
+	if err := invitation.Accept(); err != nil {
+		return fmt.Errorf("이미 응답한 초대장입니다: %w", ErrAlreadyRespondedInvitation)
+	}
+
+	if err := s.invitationRepository.Update(ctx, db, invitation); err != nil {
+		return fmt.Errorf("기도방 초대장 상태 업데이트 실패: %w", err)
+	}
+
+	return nil
+}
+
+// Reject rejects an invitation
+func (s *InvitationService) Reject(ctx context.Context, db *gorm.DB, invitation *model.Invitation) error {
+	if err := invitation.Reject(); err != nil {
+		return fmt.Errorf("이미 응답한 초대장입니다: %w", ErrAlreadyRespondedInvitation)
+	}
+
+	if err := s.invitationRepository.Update(ctx, db, invitation); err != nil {
+		return fmt.Errorf("기도방 초대장 상태 업데이트 실패: %w", err)
+	}
+
+	return nil
+}
