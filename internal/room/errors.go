@@ -12,6 +12,7 @@ const (
 	memberRoomAlreadyExists = "MEMBER_ROOM_ALREADY_EXIST" // errInfo
 	someoneAlreadyExists    = "SOMEONE_ALREADY_EXIST"     // errInfo
 	invalidRoomID           = "INVALID_ROOM_ID"           // errInfo
+	memberAlreadyInRoom     = "MEMBER_ALREADY_IN_ROOM"    // errInfo
 )
 
 var (
@@ -20,6 +21,7 @@ var (
 	ErrMemberRoomAlreadyExists = sharedError.NewDomainError(memberRoomAlreadyExists)
 	ErrSomeoneAlreadyExists    = sharedError.NewDomainError(someoneAlreadyExists)
 	ErrInvalidRoomID           = sharedError.NewDomainError(invalidRoomID)
+	ErrMemberAlreadyInRoom     = sharedError.NewDomainError(memberAlreadyInRoom)
 )
 
 func init() {
@@ -52,5 +54,11 @@ func init() {
 		Status:  http.StatusBadRequest,
 		Code:    "ROOM-005",
 		Message: "잘 못된 방을 선택하셨습니다.",
+	})
+
+	sharedError.RegisterDomainErrorResponse(memberAlreadyInRoom, sharedError.ErrorResponse{
+		Status:  http.StatusConflict,
+		Code:    "ROOM-006",
+		Message: "이미 방에 가입된 회원이 있습니다.",
 	})
 }

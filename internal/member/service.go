@@ -48,6 +48,15 @@ func (s *MemberService) GetByEmail(ctx context.Context, db *gorm.DB, email strin
 	return member, nil
 }
 
+// GetByIDs - ID 리스트로 회원 일괄 조회
+func (s *MemberService) GetByIDs(ctx context.Context, db *gorm.DB, memberIDs []int64) ([]*model.Member, error) {
+	members, err := s.memberRepository.FindByIDs(ctx, db, memberIDs)
+	if err != nil {
+		return nil, fmt.Errorf("회원 일괄 조회 실패: %w", err)
+	}
+	return members, nil
+}
+
 // ExistsByEmail - 이메일 중복 확인
 func (s *MemberService) ExistsByEmail(ctx context.Context, db *gorm.DB, email string) (bool, error) {
 	exists, err := s.memberRepository.IsExistByEmail(ctx, db, email)

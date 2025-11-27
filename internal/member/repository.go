@@ -80,6 +80,20 @@ func (m *MemberRepository) FindByID(ctx context.Context, db *gorm.DB, ID int64) 
 	return &member, nil
 }
 
+// FindByIDs - ID 리스트로 회원 일괄 조회
+func (m *MemberRepository) FindByIDs(ctx context.Context, db *gorm.DB, memberIDs []int64) ([]*model.Member, error) {
+	if len(memberIDs) == 0 {
+		return []*model.Member{}, nil
+	}
+
+	var members []*model.Member
+	err := db.WithContext(ctx).Where("id IN ?", memberIDs).Find(&members).Error
+	if err != nil {
+		return nil, err
+	}
+	return members, nil
+}
+
 // Delete - 회원 삭제
 func (m *MemberRepository) Delete(ctx context.Context, db *gorm.DB, memberID int64) error {
 	result := db.WithContext(ctx).Delete(&model.Member{}, memberID)
