@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"testing"
 
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
+	testutil2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/prayer"
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +18,7 @@ import (
 
 // setupPrayerContentRouter sets up a router for prayer content tests
 func setupPrayerContentRouter(memberID int64, handler *prayer.PrayerHandler) *gin.Engine {
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.POST("/api/v1/prayers/:titleId/contents", handler.CreatePrayerContent)
 	return router
 }
@@ -26,13 +26,13 @@ func setupPrayerContentRouter(memberID int64, handler *prayer.PrayerHandler) *gi
 func TestCreatePrayerContent_Success(t *testing.T) {
 	// Given: Setup test environment
 	prayerHandler, db, memberID := setupTestEnvironment(t)
-	testRoom := testutil.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
-	prayerTitle := testutil.CreateTestPrayerTitle(t, db, testRoom.ID, "Please pray for my family")
+	testRoom := testutil2.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
+	prayerTitle := testutil2.CreateTestPrayerTitle(t, db, testRoom.ID, "Please pray for my family")
 	router := setupPrayerContentRouter(memberID, prayerHandler)
 
 	// Given: Valid create prayer content request
 	targetMemberID := int64(12345)
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodPost,
 		URL:    fmt.Sprintf("/api/v1/prayers/%d/contents", prayerTitle.ID),
 		Body: prayer.CreatePrayerContentRequest{
@@ -43,13 +43,13 @@ func TestCreatePrayerContent_Success(t *testing.T) {
 	}
 
 	// When: Execute create prayer content request
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify response
 	assert.Equal(t, http.StatusCreated, recorder.Code)
 
 	var response sharedHttp.MessageResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 	assert.Equal(t, "기도 내용을 생성했습니다.", response.Message)
 
 	// Verify prayer content was created in database
@@ -69,12 +69,12 @@ func TestCreatePrayerContent_Success(t *testing.T) {
 func TestCreatePrayerContent_Success_WithoutMemberID(t *testing.T) {
 	// Given: Setup test environment
 	prayerHandler, db, memberID := setupTestEnvironment(t)
-	testRoom := testutil.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
-	prayerTitle := testutil.CreateTestPrayerTitle(t, db, testRoom.ID, "Please pray for my family")
+	testRoom := testutil2.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
+	prayerTitle := testutil2.CreateTestPrayerTitle(t, db, testRoom.ID, "Please pray for my family")
 	router := setupPrayerContentRouter(memberID, prayerHandler)
 
 	// Given: Request without memberID (optional field)
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodPost,
 		URL:    fmt.Sprintf("/api/v1/prayers/%d/contents", prayerTitle.ID),
 		Body: prayer.CreatePrayerContentRequest{
@@ -85,13 +85,13 @@ func TestCreatePrayerContent_Success_WithoutMemberID(t *testing.T) {
 	}
 
 	// When: Execute create prayer content request
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify response
 	assert.Equal(t, http.StatusCreated, recorder.Code)
 
 	var response sharedHttp.MessageResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 	assert.Equal(t, "기도 내용을 생성했습니다.", response.Message)
 
 	// Verify prayer content was created with nil memberID
@@ -108,8 +108,8 @@ func TestCreatePrayerContent_Success_WithoutMemberID(t *testing.T) {
 func TestCreatePrayerContent_ValidationError_MissingRequiredFields(t *testing.T) {
 	// Given: Setup test environment
 	prayerHandler, db, memberID := setupTestEnvironment(t)
-	testRoom := testutil.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
-	prayerTitle := testutil.CreateTestPrayerTitle(t, db, testRoom.ID, "Please pray for my family")
+	testRoom := testutil2.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
+	prayerTitle := testutil2.CreateTestPrayerTitle(t, db, testRoom.ID, "Please pray for my family")
 	router := setupPrayerContentRouter(memberID, prayerHandler)
 
 	testCases := []struct {
@@ -152,19 +152,19 @@ func TestCreatePrayerContent_ValidationError_MissingRequiredFields(t *testing.T)
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// When: Execute request with invalid field
-			request := testutil.TestRequest{
+			request := testutil2.TestRequest{
 				Method: http.MethodPost,
 				URL:    fmt.Sprintf("/api/v1/prayers/%d/contents", prayerTitle.ID),
 				Body:   tc.requestBody,
 			}
 
-			recorder := testutil.ExecuteRequest(t, router, request)
+			recorder := testutil2.ExecuteRequest(t, router, request)
 
 			// Then: Verify validation error
 			assert.Equal(t, http.StatusBadRequest, recorder.Code, tc.description)
 
 			var errorResponse sharedError.ErrorResponse
-			testutil.ParseResponse(t, recorder, &errorResponse)
+			testutil2.ParseResponse(t, recorder, &errorResponse)
 			assert.NotEmpty(t, errorResponse.Status, tc.description)
 			assert.NotEmpty(t, errorResponse.Message, tc.description)
 			assert.NotEmpty(t, errorResponse.Code, tc.description)
@@ -202,7 +202,7 @@ func TestCreatePrayerContent_ValidationError_InvalidTitleID(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Given: Request with invalid titleId
-			request := testutil.TestRequest{
+			request := testutil2.TestRequest{
 				Method: http.MethodPost,
 				URL:    fmt.Sprintf("/api/v1/prayers/%s/contents", tc.titleID),
 				Body: prayer.CreatePrayerContentRequest{
@@ -212,13 +212,13 @@ func TestCreatePrayerContent_ValidationError_InvalidTitleID(t *testing.T) {
 			}
 
 			// When: Execute request
-			recorder := testutil.ExecuteRequest(t, router, request)
+			recorder := testutil2.ExecuteRequest(t, router, request)
 
 			// Then: Verify validation error
 			assert.Equal(t, http.StatusBadRequest, recorder.Code, tc.description)
 
 			var errorResponse sharedError.ErrorResponse
-			testutil.ParseResponse(t, recorder, &errorResponse)
+			testutil2.ParseResponse(t, recorder, &errorResponse)
 			assert.NotEmpty(t, errorResponse.Message, tc.description)
 		})
 	}
@@ -231,7 +231,7 @@ func TestCreatePrayerContent_PrayerTitleNotFound(t *testing.T) {
 
 	// Given: Request with non-existent titleId
 	nonExistentTitleID := int64(99999)
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodPost,
 		URL:    fmt.Sprintf("/api/v1/prayers/%d/contents", nonExistentTitleID),
 		Body: prayer.CreatePrayerContentRequest{
@@ -241,13 +241,13 @@ func TestCreatePrayerContent_PrayerTitleNotFound(t *testing.T) {
 	}
 
 	// When: Execute request
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify not found error
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 
 	var errorResponse sharedError.ErrorResponse
-	testutil.ParseResponse(t, recorder, &errorResponse)
+	testutil2.ParseResponse(t, recorder, &errorResponse)
 	assert.NotEmpty(t, errorResponse.Message)
 	assert.Equal(t, "PRAYER-001", errorResponse.Code)
 }
@@ -255,13 +255,13 @@ func TestCreatePrayerContent_PrayerTitleNotFound(t *testing.T) {
 func TestCreatePrayerContent_MemberNotInRoom(t *testing.T) {
 	// Given: Setup test environment
 	prayerHandler, db, memberID := setupTestEnvironment(t)
-	anotherMember := testutil.CreateTestMemberWithIndex(t, db, 1)
-	roomOwnedByAnother := testutil.CreateTestRoom(t, db, anotherMember.ID, "Another Room", "Test Description")
-	prayerTitle := testutil.CreateTestPrayerTitle(t, db, roomOwnedByAnother.ID, "Please pray for my family")
+	anotherMember := testutil2.CreateTestMemberWithIndex(t, db, 1)
+	roomOwnedByAnother := testutil2.CreateTestRoom(t, db, anotherMember.ID, "Another Room", "Test Description")
+	prayerTitle := testutil2.CreateTestPrayerTitle(t, db, roomOwnedByAnother.ID, "Please pray for my family")
 	router := setupPrayerContentRouter(memberID, prayerHandler)
 
 	// Given: Request to create prayer content in a room the member doesn't belong to
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodPost,
 		URL:    fmt.Sprintf("/api/v1/prayers/%d/contents", prayerTitle.ID),
 		Body: prayer.CreatePrayerContentRequest{
@@ -271,12 +271,12 @@ func TestCreatePrayerContent_MemberNotInRoom(t *testing.T) {
 	}
 
 	// When: Execute request
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify not found error (member not in room)
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 
 	var errorResponse sharedError.ErrorResponse
-	testutil.ParseResponse(t, recorder, &errorResponse)
+	testutil2.ParseResponse(t, recorder, &errorResponse)
 	assert.NotEmpty(t, errorResponse.Message)
 }

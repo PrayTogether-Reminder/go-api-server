@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"testing"
 
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
+	testutil2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -17,9 +17,9 @@ import (
 func setupMemberTestEnvironment(t *testing.T) (*member.MemberHandler, *gorm.DB) {
 	t.Helper()
 
-	db := testutil.SetupTestDB(t)
+	db := testutil2.SetupTestDB(t)
 	t.Cleanup(func() {
-		testutil.CleanupTestDB(t, db)
+		testutil2.CleanupTestDB(t, db)
 	})
 
 	memberRepo := member.NewMemberRepository()
@@ -32,12 +32,12 @@ func setupMemberTestEnvironment(t *testing.T) (*member.MemberHandler, *gorm.DB) 
 
 func TestUpdateProfile_Success(t *testing.T) {
 	memberHandler, db := setupMemberTestEnvironment(t)
-	createdMember := testutil.CreateTestMember(t, db)
+	createdMember := testutil2.CreateTestMember(t, db)
 
-	router := testutil.SetupAuthenticatedRouter(createdMember.ID)
+	router := testutil2.SetupAuthenticatedRouter(createdMember.ID)
 	router.PATCH("/api/v1/members/me", memberHandler.UpdateProfile)
 
-	recorder := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+	recorder := testutil2.ExecuteRequest(t, router, testutil2.TestRequest{
 		Method: http.MethodPatch,
 		URL:    "/api/v1/members/me",
 		Body: map[string]string{
@@ -49,7 +49,7 @@ func TestUpdateProfile_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
 	var response sharedHttp.MessageResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 	assert.Equal(t, "프로필을 변경했습니다.", response.Message)
 
 	memberRepo := member.NewMemberRepository()
@@ -61,12 +61,12 @@ func TestUpdateProfile_Success(t *testing.T) {
 
 func TestUpdateProfile_ValidationError(t *testing.T) {
 	memberHandler, db := setupMemberTestEnvironment(t)
-	createdMember := testutil.CreateTestMember(t, db)
+	createdMember := testutil2.CreateTestMember(t, db)
 
-	router := testutil.SetupAuthenticatedRouter(createdMember.ID)
+	router := testutil2.SetupAuthenticatedRouter(createdMember.ID)
 	router.PATCH("/api/v1/members/me", memberHandler.UpdateProfile)
 
-	recorder := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+	recorder := testutil2.ExecuteRequest(t, router, testutil2.TestRequest{
 		Method: http.MethodPatch,
 		URL:    "/api/v1/members/me",
 		Body: map[string]string{
@@ -77,16 +77,16 @@ func TestUpdateProfile_ValidationError(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
 
 	var errorResponse sharedError.ErrorResponse
-	testutil.ParseResponse(t, recorder, &errorResponse)
+	testutil2.ParseResponse(t, recorder, &errorResponse)
 	assert.Equal(t, "ERROR-001", errorResponse.Code)
 }
 
 func TestUpdateProfile_Unauthorized(t *testing.T) {
 	memberHandler, _ := setupMemberTestEnvironment(t)
-	router := testutil.SetupTestRouter()
+	router := testutil2.SetupTestRouter()
 	router.PATCH("/api/v1/members/me", memberHandler.UpdateProfile)
 
-	recorder := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+	recorder := testutil2.ExecuteRequest(t, router, testutil2.TestRequest{
 		Method: http.MethodPatch,
 		URL:    "/api/v1/members/me",
 	})
@@ -98,10 +98,10 @@ func TestUpdateProfile_NotFound(t *testing.T) {
 	memberHandler, _ := setupMemberTestEnvironment(t)
 	const nonexistentID int64 = 99999
 
-	router := testutil.SetupAuthenticatedRouter(nonexistentID)
+	router := testutil2.SetupAuthenticatedRouter(nonexistentID)
 	router.PATCH("/api/v1/members/me", memberHandler.UpdateProfile)
 
-	recorder := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+	recorder := testutil2.ExecuteRequest(t, router, testutil2.TestRequest{
 		Method: http.MethodPatch,
 		URL:    "/api/v1/members/me",
 		Body: map[string]string{
@@ -113,6 +113,6 @@ func TestUpdateProfile_NotFound(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 
 	var errorResponse sharedError.ErrorResponse
-	testutil.ParseResponse(t, recorder, &errorResponse)
+	testutil2.ParseResponse(t, recorder, &errorResponse)
 	assert.Equal(t, "MEMBER-001", errorResponse.Code)
 }

@@ -3,11 +3,11 @@ package prayer
 import (
 	"context"
 
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/database"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/room"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
-	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"gorm.io/gorm"
 )
 

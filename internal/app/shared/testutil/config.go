@@ -3,7 +3,7 @@ package testutil
 import (
 	"time"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
 )
 
 // NewTestConfig creates a test configuration

@@ -4,18 +4,18 @@ import (
 	"net/http"
 	"testing"
 
+	testutil2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSearchMembers_ReturnsMatches(t *testing.T) {
 	memberHandler, db := setupMemberTestEnvironment(t)
 
-	m1 := testutil.CreateTestMemberWithIndex(t, db, 0)
-	m2 := testutil.CreateTestMemberWithIndex(t, db, 1)
-	m3 := testutil.CreateTestMemberWithIndex(t, db, 2)
+	m1 := testutil2.CreateTestMemberWithIndex(t, db, 0)
+	m2 := testutil2.CreateTestMemberWithIndex(t, db, 1)
+	m3 := testutil2.CreateTestMemberWithIndex(t, db, 2)
 
 	// Customize member data for search scenario
 	db.Model(&model.Member{}).Where("id = ?", m1.ID).Updates(map[string]any{
@@ -31,10 +31,10 @@ func TestSearchMembers_ReturnsMatches(t *testing.T) {
 		"phone_number": "010-0000-0000",
 	})
 
-	router := testutil.SetupAuthenticatedRouter(m1.ID)
+	router := testutil2.SetupAuthenticatedRouter(m1.ID)
 	router.GET("/api/v1/members/search", memberHandler.SearchMembers)
 
-	recorder := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+	recorder := testutil2.ExecuteRequest(t, router, testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    "/api/v1/members/search?name=홍",
 	})
@@ -42,7 +42,7 @@ func TestSearchMembers_ReturnsMatches(t *testing.T) {
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
 	var response member.SearchMemberResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 	assert.Len(t, response.Members, 2)
 
 	resultMap := map[string]*string{}
@@ -63,10 +63,10 @@ func TestSearchMembers_ReturnsMatches(t *testing.T) {
 
 func TestSearchMembers_Unauthorized(t *testing.T) {
 	memberHandler, _ := setupMemberTestEnvironment(t)
-	router := testutil.SetupTestRouter()
+	router := testutil2.SetupTestRouter()
 	router.GET("/api/v1/members/search", memberHandler.SearchMembers)
 
-	recorder := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+	recorder := testutil2.ExecuteRequest(t, router, testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    "/api/v1/members/search?name=홍",
 	})

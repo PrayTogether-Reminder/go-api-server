@@ -7,11 +7,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/token"
-
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
+	token2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -64,7 +63,7 @@ func init() {
 }
 
 func JWT(cfg *config.Config) gin.HandlerFunc {
-	tokenManager := token.NewJWTManager(cfg)
+	tokenManager := token2.NewJWTManager(cfg)
 
 	return func(c *gin.Context) {
 		// 요청 정보 (로깅용)
@@ -149,9 +148,9 @@ func extractToken(c *gin.Context) (string, error) {
 
 func mapTokenError(err error) error {
 	switch {
-	case errors.Is(err, token.ErrExpiredToken):
+	case errors.Is(err, token2.ErrExpiredToken):
 		return ErrExpiredToken
-	case errors.Is(err, token.ErrInvalidClaims):
+	case errors.Is(err, token2.ErrInvalidClaims):
 		return ErrInvalidClaims
 	default:
 		return ErrInvalidToken

@@ -11,12 +11,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/bootstrap"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/router"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/validator"
+	bootstrap2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/bootstrap"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/router"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/database"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/logger"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/validator"
 )
 
 func main() {
@@ -76,9 +76,9 @@ func run(env string) error {
 }
 
 // setupServer initializes and configures the HTTP server
-func setupServer(cfg *config.Config, db *database.DB) *bootstrap.Server {
+func setupServer(cfg *config.Config, db *database.DB) *bootstrap2.Server {
 	// Bootstrap server with common setup
-	boot := bootstrap.NewBootstrap(cfg)
+	boot := bootstrap2.NewBootstrap(cfg)
 	ginEngine := boot.SetupEngine()
 
 	// Register common validators
@@ -94,11 +94,11 @@ func setupServer(cfg *config.Config, db *database.DB) *bootstrap.Server {
 		"env", cfg.App.Env,
 	)
 
-	return bootstrap.New(cfg, ginEngine)
+	return bootstrap2.New(cfg, ginEngine)
 }
 
 // startWithGracefulShutdown starts the server and handles graceful shutdown
-func startWithGracefulShutdown(ctx context.Context, srv *bootstrap.Server, gracefulTimeout time.Duration) error {
+func startWithGracefulShutdown(ctx context.Context, srv *bootstrap2.Server, gracefulTimeout time.Duration) error {
 	// Channel to receive server errors
 	serverErrors := make(chan error, 1)
 

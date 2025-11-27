@@ -3,8 +3,8 @@ package auth
 import (
 	"net/http"
 
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
+	http2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,18 +22,18 @@ func (a *AuthHandler) Login(c *gin.Context) {
 	var request LoginRequest
 
 	// Parse and validate JSON request
-	if !sharedHttp.BindJSON(c, &request) {
+	if !http2.BindJSON(c, &request) {
 		return
 	}
 
 	response, err := a.authUseCase.Login(c.Request.Context(), &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			sharedHttp.RespondError(c, err, resp)
+			http2.RespondError(c, err, resp)
 			return
 		}
 
-		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		http2.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -44,18 +44,18 @@ func (a *AuthHandler) Signup(c *gin.Context) {
 	var request SignupRequest
 
 	// Parse and validate JSON request
-	if !sharedHttp.BindJSON(c, &request) {
+	if !http2.BindJSON(c, &request) {
 		return
 	}
 
 	err := a.authUseCase.Signup(c.Request.Context(), &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			sharedHttp.RespondError(c, err, resp)
+			http2.RespondError(c, err, resp)
 			return
 		}
 
-		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		http2.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{})
@@ -64,18 +64,18 @@ func (a *AuthHandler) Signup(c *gin.Context) {
 func (a *AuthHandler) RequestEmailOTP(c *gin.Context) {
 	var request EmailOtpRequest
 
-	if !sharedHttp.BindJSON(c, &request) {
+	if !http2.BindJSON(c, &request) {
 		return
 	}
 
 	response, err := a.authUseCase.RequestEmailOTP(c.Request.Context(), &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			sharedHttp.RespondError(c, err, resp)
+			http2.RespondError(c, err, resp)
 			return
 		}
 
-		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		http2.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -85,18 +85,18 @@ func (a *AuthHandler) RequestEmailOTP(c *gin.Context) {
 func (a *AuthHandler) VerifyEmailOTP(c *gin.Context) {
 	var request VerifyOtpRequest
 
-	if !sharedHttp.BindJSON(c, &request) {
+	if !http2.BindJSON(c, &request) {
 		return
 	}
 
 	response, err := a.authUseCase.VerifyEmailOTP(c.Request.Context(), &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			sharedHttp.RespondError(c, err, resp)
+			http2.RespondError(c, err, resp)
 			return
 		}
 
-		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		http2.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -104,7 +104,7 @@ func (a *AuthHandler) VerifyEmailOTP(c *gin.Context) {
 }
 
 func (a *AuthHandler) Withdraw(c *gin.Context) {
-	memberID, ok := sharedHttp.RequireMemberID(c)
+	memberID, ok := http2.RequireMemberID(c)
 	if !ok {
 		return
 	}
@@ -112,11 +112,11 @@ func (a *AuthHandler) Withdraw(c *gin.Context) {
 	response, err := a.authUseCase.Withdraw(c.Request.Context(), memberID)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			sharedHttp.RespondError(c, err, resp)
+			http2.RespondError(c, err, resp)
 			return
 		}
 
-		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		http2.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -124,18 +124,18 @@ func (a *AuthHandler) Withdraw(c *gin.Context) {
 }
 
 func (a *AuthHandler) Logout(c *gin.Context) {
-	memberID, ok := sharedHttp.RequireMemberID(c)
+	memberID, ok := http2.RequireMemberID(c)
 	if !ok {
 		return
 	}
 
 	if err := a.authUseCase.Logout(c.Request.Context(), memberID); err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			sharedHttp.RespondError(c, err, resp)
+			http2.RespondError(c, err, resp)
 			return
 		}
 
-		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		http2.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -145,18 +145,18 @@ func (a *AuthHandler) Logout(c *gin.Context) {
 func (h *AuthHandler) ReissueToken(c *gin.Context) {
 	var request AuthTokenReissueRequest
 
-	if !sharedHttp.BindJSON(c, &request) {
+	if !http2.BindJSON(c, &request) {
 		return
 	}
 
 	response, err := h.authUseCase.ReissueAuthToken(c.Request.Context(), &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			sharedHttp.RespondError(c, err, resp)
+			http2.RespondError(c, err, resp)
 			return
 		}
 
-		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		http2.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 

@@ -3,17 +3,17 @@ package router
 import (
 	"time"
 
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/database"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/middleware"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/token"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth/otp"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/invitation"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/meta"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/prayer"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/room"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/middleware"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/token"
 	"github.com/gin-gonic/gin"
 )
 

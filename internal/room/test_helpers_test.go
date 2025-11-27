@@ -3,8 +3,8 @@ package room_test
 import (
 	"testing"
 
+	testutil2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/room"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
 	"gorm.io/gorm"
 )
 
@@ -14,21 +14,21 @@ func setupTestEnvironment(t *testing.T) (*room.RoomHandler, *gorm.DB, int64) {
 	t.Helper()
 
 	// Setup test database
-	db := testutil.SetupTestDB(t)
+	db := testutil2.SetupTestDB(t)
 	t.Cleanup(func() {
-		testutil.CleanupTestDB(t, db)
+		testutil2.CleanupTestDB(t, db)
 	})
 
 	// Create a test member for authenticated requests
-	testMember := testutil.CreateTestMember(t, db)
+	testMember := testutil2.CreateTestMember(t, db)
 
 	// Setup dependencies
 	roomRepo := room.NewRoomRepository()
 	memberRoomRepo := room.NewMemberRoomRepository()
 
 	// Create member service for validation
-	memberRepo := testutil.NewMemberRepository()
-	memberService := testutil.NewMemberService(memberRepo)
+	memberRepo := testutil2.NewMemberRepository()
+	memberService := testutil2.NewMemberService(memberRepo)
 
 	roomService := room.NewRoomService(roomRepo, memberRoomRepo, memberService)
 	roomUseCase := room.NewRoomUseCase(db, roomService)

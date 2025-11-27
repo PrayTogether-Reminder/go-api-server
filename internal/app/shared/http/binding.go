@@ -3,8 +3,8 @@ package http
 import (
 	"net/http"
 
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/validator"
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/validator"
 	"github.com/gin-gonic/gin"
 )
 

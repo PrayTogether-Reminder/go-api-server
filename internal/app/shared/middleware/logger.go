@@ -1,11 +1,12 @@
 package middleware
 
 import (
-	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"log/slog"
 	"time"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/logger"
+
 	"github.com/gin-gonic/gin"
 )
 

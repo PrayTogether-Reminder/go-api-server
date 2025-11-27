@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/database"
 	"github.com/gin-gonic/gin"
 )
 

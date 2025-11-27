@@ -3,11 +3,11 @@ package invitation_test
 import (
 	testing "testing"
 
+	testutil2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/invitation"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/room"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
 	"gorm.io/gorm"
 )
 
@@ -15,12 +15,12 @@ import (
 func setupInvitationTestEnvironment(t *testing.T) (*invitation.InvitationHandler, *gorm.DB, *model.Member) {
 	t.Helper()
 
-	db := testutil.SetupTestDB(t)
+	db := testutil2.SetupTestDB(t)
 	t.Cleanup(func() {
-		testutil.CleanupTestDB(t, db)
+		testutil2.CleanupTestDB(t, db)
 	})
 
-	inviter := testutil.CreateTestMember(t, db)
+	inviter := testutil2.CreateTestMember(t, db)
 
 	memberRepo := member.NewMemberRepository()
 	memberService := member.NewMemberService(memberRepo)

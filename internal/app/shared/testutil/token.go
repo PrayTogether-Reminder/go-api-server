@@ -3,8 +3,8 @@ package testutil
 import (
 	"time"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/token"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/token"
 )
 
 // MockTokenManager is a mock implementation of token.Manager for testing

@@ -8,8 +8,8 @@ import (
 	"net/smtp"
 	"path/filepath"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
+	logger2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/logger"
 )
 
 // SMTPSender sends OTP via email using SMTP.
@@ -26,7 +26,7 @@ func NewSMTPSender(cfg config.SMTPConfig) *SMTPSender {
 
 // SendOTP sends an OTP to the given email address.
 func (s *SMTPSender) SendOTP(ctx context.Context, email, otp string) error {
-	log := logger.FromContext(ctx)
+	log := logger2.FromContext(ctx)
 
 	// Load and parse HTML template
 	htmlBody, err := s.renderTemplate(otp)
@@ -45,10 +45,10 @@ func (s *SMTPSender) SendOTP(ctx context.Context, email, otp string) error {
 	addr := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
 	err = smtp.SendMail(addr, auth, s.config.From, []string{email}, []byte(message))
 	if err != nil {
-		return fmt.Errorf("OTP 이메일 발송 실패: email=%s %w", logger.MaskEmail(email), err)
+		return fmt.Errorf("OTP 이메일 발송 실패: email=%s %w", logger2.MaskEmail(email), err)
 	}
 
-	log.Info("OTP 발송 성공", "email", logger.MaskEmail(email))
+	log.Info("OTP 발송 성공", "email", logger2.MaskEmail(email))
 	return nil
 }
 

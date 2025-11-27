@@ -3,8 +3,8 @@ package member
 import (
 	"net/http"
 
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
+	http2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +22,7 @@ func NewMemberHandler(memberUseCase *MemberUseCase) *MemberHandler {
 
 // FetchProfile - 회원 프로필 조회 API
 func (h *MemberHandler) FetchProfile(c *gin.Context) {
-	memberID, ok := sharedHttp.RequireMemberID(c)
+	memberID, ok := http2.RequireMemberID(c)
 	if !ok {
 		return
 	}
@@ -31,11 +31,11 @@ func (h *MemberHandler) FetchProfile(c *gin.Context) {
 	member, err := h.memberUseCase.GetProfile(c.Request.Context(), memberID)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			sharedHttp.RespondError(c, err, resp)
+			http2.RespondError(c, err, resp)
 			return
 		}
 
-		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		http2.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -50,24 +50,24 @@ func (h *MemberHandler) FetchProfile(c *gin.Context) {
 
 // UpdateProfile - 회원 프로필 수정 API
 func (h *MemberHandler) UpdateProfile(c *gin.Context) {
-	memberID, ok := sharedHttp.RequireMemberID(c)
+	memberID, ok := http2.RequireMemberID(c)
 	if !ok {
 		return
 	}
 
 	var request UpdateProfileRequest
-	if !sharedHttp.BindJSON(c, &request) {
+	if !http2.BindJSON(c, &request) {
 		return
 	}
 
 	response, err := h.memberUseCase.UpdateProfile(c.Request.Context(), memberID, &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			sharedHttp.RespondError(c, err, resp)
+			http2.RespondError(c, err, resp)
 			return
 		}
 
-		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		http2.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -76,24 +76,24 @@ func (h *MemberHandler) UpdateProfile(c *gin.Context) {
 
 // SearchMembers - 회원 검색 API
 func (h *MemberHandler) SearchMembers(c *gin.Context) {
-	memberID, ok := sharedHttp.RequireMemberID(c)
+	memberID, ok := http2.RequireMemberID(c)
 	if !ok {
 		return
 	}
 
 	var request SearchMemberRequest
-	if !sharedHttp.BindQuery(c, &request) {
+	if !http2.BindQuery(c, &request) {
 		return
 	}
 
 	response, err := h.memberUseCase.SearchMembers(c.Request.Context(), memberID, request.Name)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			sharedHttp.RespondError(c, err, resp)
+			http2.RespondError(c, err, resp)
 			return
 		}
 
-		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		http2.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 

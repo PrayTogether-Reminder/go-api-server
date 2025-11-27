@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"log/slog"
 	"time"
+
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
 
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"

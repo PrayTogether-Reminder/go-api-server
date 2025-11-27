@@ -2,9 +2,10 @@ package validator
 
 import (
 	"fmt"
+	"log/slog"
+
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
-	"log/slog"
 )
 
 // GetValidator returns the validator instance from Gin binding

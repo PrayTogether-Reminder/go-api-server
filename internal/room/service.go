@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/domain"
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/domain"
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
 	"gorm.io/gorm"
 )
 

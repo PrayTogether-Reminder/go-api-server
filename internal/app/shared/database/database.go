@@ -7,8 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
-
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
 	oracle "github.com/godoes/gorm-oracle"
 	"gorm.io/gorm"
 )

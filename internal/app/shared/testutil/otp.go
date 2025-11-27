@@ -3,8 +3,8 @@ package testutil
 import (
 	"time"
 
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth/otp"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 )
 
 // NewTestOTPService creates an OTP service for testing with mock SMTP sender

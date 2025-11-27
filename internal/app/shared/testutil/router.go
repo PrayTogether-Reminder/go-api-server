@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"testing"
 
-	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/validator"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/validator"
 	"github.com/gin-gonic/gin"
 )
 

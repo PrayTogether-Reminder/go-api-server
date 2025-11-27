@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"testing"
 
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
+	testutil2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,33 +17,33 @@ func TestDeletePrayerContent_Success(t *testing.T) {
 	prayerHandler, db, memberID := setupTestEnvironment(t)
 
 	// Given: Create a test room with the member
-	testRoom := testutil.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
+	testRoom := testutil2.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
 
 	// Given: Create a prayer title
-	prayerTitle := testutil.CreateTestPrayerTitle(t, db, testRoom.ID, "Test Prayer Title")
+	prayerTitle := testutil2.CreateTestPrayerTitle(t, db, testRoom.ID, "Test Prayer Title")
 
 	// Given: Create a prayer content
-	writer := testutil.CreateTestMemberWithIndex(t, db, 1)
+	writer := testutil2.CreateTestMemberWithIndex(t, db, 1)
 	memberID1 := int64(1)
-	prayerContent := testutil.CreateTestPrayerContent(t, db, prayerTitle.ID, writer.ID, writer.Name, &memberID1, "Member 1", "Test Content")
+	prayerContent := testutil2.CreateTestPrayerContent(t, db, prayerTitle.ID, writer.ID, writer.Name, &memberID1, "Member 1", "Test Content")
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.DELETE("/api/v1/prayers/:titleId/contents/:contentId", prayerHandler.DeletePrayerContent)
 
 	// Given: Valid delete prayer content request
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodDelete,
 		URL:    fmt.Sprintf("/api/v1/prayers/%d/contents/%d", prayerTitle.ID, prayerContent.ID),
 	}
 
 	// When: Execute delete prayer content request
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify response
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
 	var response sharedHttp.MessageResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 	assert.Equal(t, "기도 내용을 삭제했습니다.", response.Message)
 
 	// Then: Verify prayer content was deleted from database
@@ -57,29 +57,29 @@ func TestDeletePrayerContent_ContentNotFound(t *testing.T) {
 	prayerHandler, db, memberID := setupTestEnvironment(t)
 
 	// Given: Create a test room with the member
-	testRoom := testutil.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
+	testRoom := testutil2.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
 
 	// Given: Create a prayer title
-	prayerTitle := testutil.CreateTestPrayerTitle(t, db, testRoom.ID, "Test Prayer Title")
+	prayerTitle := testutil2.CreateTestPrayerTitle(t, db, testRoom.ID, "Test Prayer Title")
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.DELETE("/api/v1/prayers/:titleId/contents/:contentId", prayerHandler.DeletePrayerContent)
 
 	// Given: Request with non-existent contentId
 	nonExistentContentID := int64(99999)
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodDelete,
 		URL:    fmt.Sprintf("/api/v1/prayers/%d/contents/%d", prayerTitle.ID, nonExistentContentID),
 	}
 
 	// When: Execute request
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify not found error
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 
 	var errorResponse sharedError.ErrorResponse
-	testutil.ParseResponse(t, recorder, &errorResponse)
+	testutil2.ParseResponse(t, recorder, &errorResponse)
 	assert.NotEmpty(t, errorResponse.Message)
 }
 
@@ -87,25 +87,25 @@ func TestDeletePrayerContent_TitleNotFound(t *testing.T) {
 	// Given: Setup test environment
 	prayerHandler, _, memberID := setupTestEnvironment(t)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.DELETE("/api/v1/prayers/:titleId/contents/:contentId", prayerHandler.DeletePrayerContent)
 
 	// Given: Request with non-existent titleId
 	nonExistentTitleID := int64(99999)
 	nonExistentContentID := int64(99999)
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodDelete,
 		URL:    fmt.Sprintf("/api/v1/prayers/%d/contents/%d", nonExistentTitleID, nonExistentContentID),
 	}
 
 	// When: Execute request
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify not found error
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 
 	var errorResponse sharedError.ErrorResponse
-	testutil.ParseResponse(t, recorder, &errorResponse)
+	testutil2.ParseResponse(t, recorder, &errorResponse)
 	assert.NotEmpty(t, errorResponse.Message)
 }
 
@@ -114,30 +114,30 @@ func TestDeletePrayerContent_MemberNotInRoom(t *testing.T) {
 	prayerHandler, db, memberID := setupTestEnvironment(t)
 
 	// Given: Create another member and a room owned by that member
-	anotherMember := testutil.CreateTestMemberWithIndex(t, db, 1)
-	roomOwnedByAnother := testutil.CreateTestRoom(t, db, anotherMember.ID, "Another Room", "Test Description")
-	prayerTitle := testutil.CreateTestPrayerTitle(t, db, roomOwnedByAnother.ID, "Test Prayer Title")
+	anotherMember := testutil2.CreateTestMemberWithIndex(t, db, 1)
+	roomOwnedByAnother := testutil2.CreateTestRoom(t, db, anotherMember.ID, "Another Room", "Test Description")
+	prayerTitle := testutil2.CreateTestPrayerTitle(t, db, roomOwnedByAnother.ID, "Test Prayer Title")
 
 	memberID1 := int64(1)
-	prayerContent := testutil.CreateTestPrayerContent(t, db, prayerTitle.ID, anotherMember.ID, anotherMember.Name, &memberID1, "Member 1", "Test Content")
+	prayerContent := testutil2.CreateTestPrayerContent(t, db, prayerTitle.ID, anotherMember.ID, anotherMember.Name, &memberID1, "Member 1", "Test Content")
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.DELETE("/api/v1/prayers/:titleId/contents/:contentId", prayerHandler.DeletePrayerContent)
 
 	// Given: Request to delete prayer content in a room the member doesn't belong to
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodDelete,
 		URL:    fmt.Sprintf("/api/v1/prayers/%d/contents/%d", prayerTitle.ID, prayerContent.ID),
 	}
 
 	// When: Execute request
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify not found error (member not in room)
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 
 	var errorResponse sharedError.ErrorResponse
-	testutil.ParseResponse(t, recorder, &errorResponse)
+	testutil2.ParseResponse(t, recorder, &errorResponse)
 	assert.NotEmpty(t, errorResponse.Message)
 }
 
@@ -145,7 +145,7 @@ func TestDeletePrayerContent_ValidationError_InvalidIDs(t *testing.T) {
 	// Given: Setup test environment
 	prayerHandler, _, memberID := setupTestEnvironment(t)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.DELETE("/api/v1/prayers/:titleId/contents/:contentId", prayerHandler.DeletePrayerContent)
 
 	testCases := []struct {
@@ -183,19 +183,19 @@ func TestDeletePrayerContent_ValidationError_InvalidIDs(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Given: Request with invalid IDs
-			request := testutil.TestRequest{
+			request := testutil2.TestRequest{
 				Method: http.MethodDelete,
 				URL:    fmt.Sprintf("/api/v1/prayers/%s/contents/%s", tc.titleID, tc.contentID),
 			}
 
 			// When: Execute request
-			recorder := testutil.ExecuteRequest(t, router, request)
+			recorder := testutil2.ExecuteRequest(t, router, request)
 
 			// Then: Verify validation error
 			assert.Equal(t, http.StatusBadRequest, recorder.Code, tc.description)
 
 			var errorResponse sharedError.ErrorResponse
-			testutil.ParseResponse(t, recorder, &errorResponse)
+			testutil2.ParseResponse(t, recorder, &errorResponse)
 			assert.NotEmpty(t, errorResponse.Message, tc.description)
 		})
 	}
@@ -206,33 +206,33 @@ func TestDeletePrayerContent_ContentNotBelongToTitle(t *testing.T) {
 	prayerHandler, db, memberID := setupTestEnvironment(t)
 
 	// Given: Create a test room with the member
-	testRoom := testutil.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
+	testRoom := testutil2.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
 
 	// Given: Create two prayer titles
-	prayerTitle1 := testutil.CreateTestPrayerTitle(t, db, testRoom.ID, "Prayer Title 1")
-	prayerTitle2 := testutil.CreateTestPrayerTitle(t, db, testRoom.ID, "Prayer Title 2")
+	prayerTitle1 := testutil2.CreateTestPrayerTitle(t, db, testRoom.ID, "Prayer Title 1")
+	prayerTitle2 := testutil2.CreateTestPrayerTitle(t, db, testRoom.ID, "Prayer Title 2")
 
 	// Given: Create a prayer content for title 1
-	writer := testutil.CreateTestMemberWithIndex(t, db, 1)
+	writer := testutil2.CreateTestMemberWithIndex(t, db, 1)
 	memberID1 := int64(1)
-	prayerContent := testutil.CreateTestPrayerContent(t, db, prayerTitle1.ID, writer.ID, writer.Name, &memberID1, "Member 1", "Test Content")
+	prayerContent := testutil2.CreateTestPrayerContent(t, db, prayerTitle1.ID, writer.ID, writer.Name, &memberID1, "Member 1", "Test Content")
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.DELETE("/api/v1/prayers/:titleId/contents/:contentId", prayerHandler.DeletePrayerContent)
 
 	// Given: Request to delete content with wrong titleId (title2 instead of title1)
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodDelete,
 		URL:    fmt.Sprintf("/api/v1/prayers/%d/contents/%d", prayerTitle2.ID, prayerContent.ID),
 	}
 
 	// When: Execute request
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify not found error (content doesn't belong to title)
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 
 	var errorResponse sharedError.ErrorResponse
-	testutil.ParseResponse(t, recorder, &errorResponse)
+	testutil2.ParseResponse(t, recorder, &errorResponse)
 	assert.NotEmpty(t, errorResponse.Message)
 }

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	testutil2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/room"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,25 +16,25 @@ func TestFetchRoomsInfiniteScroll_Success_FirstPage(t *testing.T) {
 	// Given: Setup test environment
 	roomHandler, db, memberID := setupTestEnvironment(t)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.GET("/api/v1/rooms", roomHandler.FetchRoomsByInfiniteScroll)
 
 	// Given: Create 15 test rooms for pagination test
-	testutil.CreateTestRooms(t, db, memberID, 15)
+	testutil2.CreateTestRooms(t, db, memberID, 15)
 
 	// When: Request first page with after=0
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    "/api/v1/rooms?orderBy=time&after=0&dir=desc",
 	}
 
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify response
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
 	var response room.InfiniteScrollResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 
 	// Should return page size (10) items
 	assert.Len(t, response.Rooms, room.InfiniteScrollPageSize)
@@ -58,37 +58,37 @@ func TestFetchRoomsInfiniteScroll_Success_MultiplePages(t *testing.T) {
 	// Given: Setup test environment
 	roomHandler, db, memberID := setupTestEnvironment(t)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.GET("/api/v1/rooms", roomHandler.FetchRoomsByInfiniteScroll)
 
 	// Given: Create 15 test rooms for pagination test
-	testutil.CreateTestRooms(t, db, memberID, 15)
+	testutil2.CreateTestRooms(t, db, memberID, 15)
 
 	// When: Request first page with after=0
-	firstRequest := testutil.TestRequest{
+	firstRequest := testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    "/api/v1/rooms?orderBy=time&after=0&dir=desc",
 	}
 
-	firstRecorder := testutil.ExecuteRequest(t, router, firstRequest)
+	firstRecorder := testutil2.ExecuteRequest(t, router, firstRequest)
 
 	// Then: Verify first page response
 	assert.Equal(t, http.StatusOK, firstRecorder.Code)
 
 	var firstResponse room.InfiniteScrollResponse
-	testutil.ParseResponse(t, firstRecorder, &firstResponse)
+	testutil2.ParseResponse(t, firstRecorder, &firstResponse)
 	assert.Len(t, firstResponse.Rooms, 10, "First page should have 10 items")
 
 	// When: Request second page using last item's joinedTime as cursor
 	lastJoinedTime := firstResponse.Rooms[len(firstResponse.Rooms)-1].JoinedTime
 	afterCursor := url.QueryEscape(lastJoinedTime.Format(time.RFC3339))
 
-	secondRequest := testutil.TestRequest{
+	secondRequest := testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    fmt.Sprintf("/api/v1/rooms?orderBy=time&after=%s&dir=desc", afterCursor),
 	}
 
-	secondRecorder := testutil.ExecuteRequest(t, router, secondRequest)
+	secondRecorder := testutil2.ExecuteRequest(t, router, secondRequest)
 
 	// Then: Verify second page response
 	if !assert.Equal(t, http.StatusOK, secondRecorder.Code) {
@@ -98,7 +98,7 @@ func TestFetchRoomsInfiniteScroll_Success_MultiplePages(t *testing.T) {
 	}
 
 	var secondResponse room.InfiniteScrollResponse
-	testutil.ParseResponse(t, secondRecorder, &secondResponse)
+	testutil2.ParseResponse(t, secondRecorder, &secondResponse)
 
 	if len(secondResponse.Rooms) != 5 {
 		t.Logf("Expected 5 rooms, got %d", len(secondResponse.Rooms))
@@ -129,41 +129,41 @@ func TestFetchRoomsInfiniteScroll_Success_EmptyResult(t *testing.T) {
 	// Given: Setup test environment
 	roomHandler, db, memberID := setupTestEnvironment(t)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.GET("/api/v1/rooms", roomHandler.FetchRoomsByInfiniteScroll)
 
 	// Given: Create only 5 test rooms
-	testutil.CreateTestRooms(t, db, memberID, 5)
+	testutil2.CreateTestRooms(t, db, memberID, 5)
 
 	// When: Request first page
-	firstRequest := testutil.TestRequest{
+	firstRequest := testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    "/api/v1/rooms?orderBy=time&after=0&dir=desc",
 	}
 
-	firstRecorder := testutil.ExecuteRequest(t, router, firstRequest)
+	firstRecorder := testutil2.ExecuteRequest(t, router, firstRequest)
 	assert.Equal(t, http.StatusOK, firstRecorder.Code)
 
 	var firstResponse room.InfiniteScrollResponse
-	testutil.ParseResponse(t, firstRecorder, &firstResponse)
+	testutil2.ParseResponse(t, firstRecorder, &firstResponse)
 	assert.Len(t, firstResponse.Rooms, 5)
 
 	// When: Request second page (should be empty)
 	lastJoinedTime := firstResponse.Rooms[len(firstResponse.Rooms)-1].JoinedTime
 	afterCursor := url.QueryEscape(lastJoinedTime.Format(time.RFC3339))
 
-	secondRequest := testutil.TestRequest{
+	secondRequest := testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    fmt.Sprintf("/api/v1/rooms?orderBy=time&after=%s&dir=desc", afterCursor),
 	}
 
-	secondRecorder := testutil.ExecuteRequest(t, router, secondRequest)
+	secondRecorder := testutil2.ExecuteRequest(t, router, secondRequest)
 
 	// Then: Verify empty response
 	assert.Equal(t, http.StatusOK, secondRecorder.Code)
 
 	var secondResponse room.InfiniteScrollResponse
-	testutil.ParseResponse(t, secondRecorder, &secondResponse)
+	testutil2.ParseResponse(t, secondRecorder, &secondResponse)
 	assert.Empty(t, secondResponse.Rooms, "Second page should be empty")
 }
 
@@ -171,22 +171,22 @@ func TestFetchRoomsInfiniteScroll_Success_NoRooms(t *testing.T) {
 	// Given: Setup test environment with no rooms created
 	roomHandler, _, memberID := setupTestEnvironment(t)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.GET("/api/v1/rooms", roomHandler.FetchRoomsByInfiniteScroll)
 
 	// When: Request first page
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    "/api/v1/rooms?orderBy=time&after=0&dir=desc",
 	}
 
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify empty response
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
 	var response room.InfiniteScrollResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 	assert.Empty(t, response.Rooms, "Should return empty array when no rooms exist")
 }
 
@@ -194,16 +194,16 @@ func TestFetchRoomsInfiniteScroll_ValidationError_InvalidAfter(t *testing.T) {
 	// Given: Setup test environment
 	roomHandler, _, memberID := setupTestEnvironment(t)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.GET("/api/v1/rooms", roomHandler.FetchRoomsByInfiniteScroll)
 
 	// When: Request with invalid after format
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    "/api/v1/rooms?orderBy=time&after=invalid-time-format&dir=desc",
 	}
 
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify error response
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
@@ -213,25 +213,25 @@ func TestFetchRoomsInfiniteScroll_Success_DefaultParameters(t *testing.T) {
 	// Given: Setup test environment
 	roomHandler, db, memberID := setupTestEnvironment(t)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.GET("/api/v1/rooms", roomHandler.FetchRoomsByInfiniteScroll)
 
 	// Given: Create test rooms
-	testutil.CreateTestRooms(t, db, memberID, 5)
+	testutil2.CreateTestRooms(t, db, memberID, 5)
 
 	// When: Request without query parameters (should use defaults)
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    "/api/v1/rooms",
 	}
 
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify response with default parameters
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
 	var response room.InfiniteScrollResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 	assert.Len(t, response.Rooms, 5)
 }
 

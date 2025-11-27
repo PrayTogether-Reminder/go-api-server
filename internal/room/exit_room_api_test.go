@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"testing"
 
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
+	testutil2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,26 +17,26 @@ func TestExitRoom_Success(t *testing.T) {
 	// Given: Setup test environment
 	roomHandler, db, memberID := setupTestEnvironment(t)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.DELETE("/api/v1/rooms/:roomId", roomHandler.DeleteMemberRoom)
 
 	// Given: Create a test room with member-room relationship
-	testRoom := testutil.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
+	testRoom := testutil2.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
 
 	// When: Execute exit room request
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodDelete,
 		URL:    fmt.Sprintf("/api/v1/rooms/%d", testRoom.ID),
 		Body:   nil,
 	}
 
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify response
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
 	var response sharedHttp.MessageResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 	assert.Equal(t, "방을 나갔습니다.", response.Message)
 
 	// Verify member_room relationship was deleted from database
@@ -51,7 +51,7 @@ func TestExitRoom_InvalidID(t *testing.T) {
 	// Given: Setup test environment
 	roomHandler, _, memberID := setupTestEnvironment(t)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.DELETE("/api/v1/rooms/:roomId", roomHandler.DeleteMemberRoom)
 
 	testCases := []struct {
@@ -94,19 +94,19 @@ func TestExitRoom_InvalidID(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// When: Execute request with invalid roomId
-			request := testutil.TestRequest{
+			request := testutil2.TestRequest{
 				Method: http.MethodDelete,
 				URL:    fmt.Sprintf("/api/v1/rooms/%s", tc.roomID),
 				Body:   nil,
 			}
 
-			recorder := testutil.ExecuteRequest(t, router, request)
+			recorder := testutil2.ExecuteRequest(t, router, request)
 
 			// Then: Verify bad request error
 			assert.Equal(t, http.StatusBadRequest, recorder.Code, tc.description)
 
 			var errorResponse sharedError.ErrorResponse
-			testutil.ParseResponse(t, recorder, &errorResponse)
+			testutil2.ParseResponse(t, recorder, &errorResponse)
 			slog.Info("[Validation]", "message", errorResponse.Message)
 			assert.NotEmpty(t, errorResponse.Status, tc.description)
 			assert.NotEmpty(t, errorResponse.Message, tc.description)
@@ -118,26 +118,26 @@ func TestExitRoom_NonexistentRoom(t *testing.T) {
 	// Given: Setup test environment
 	roomHandler, _, memberID := setupTestEnvironment(t)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.DELETE("/api/v1/rooms/:roomId", roomHandler.DeleteMemberRoom)
 
 	// Given: Nonexistent room ID
 	nonexistentRoomID := int64(999999)
 
 	// When: Execute exit room request with nonexistent room ID
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodDelete,
 		URL:    fmt.Sprintf("/api/v1/rooms/%d", nonexistentRoomID),
 		Body:   nil,
 	}
 
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify not found error
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 
 	var errorResponse sharedError.ErrorResponse
-	testutil.ParseResponse(t, recorder, &errorResponse)
+	testutil2.ParseResponse(t, recorder, &errorResponse)
 	assert.Equal(t, http.StatusNotFound, errorResponse.Status)
 	assert.Equal(t, "ROOM-002", errorResponse.Code)
 	assert.Equal(t, "회원이 속한 방을 찾을 수 없습니다.", errorResponse.Message)

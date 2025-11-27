@@ -3,7 +3,7 @@ package room
 import (
 	"net/http"
 
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
 )
 
 const (

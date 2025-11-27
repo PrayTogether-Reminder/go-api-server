@@ -7,22 +7,22 @@ import (
 	"testing"
 	"time"
 
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
+	testutil2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/prayer"
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFetchPrayerTitles_ReturnsLatestTitles(t *testing.T) {
 	prayerHandler, db, memberID := setupTestEnvironment(t)
-	room := testutil.CreateTestRoom(t, db, memberID, "Pray Room", "Room for prayers")
+	room := testutil2.CreateTestRoom(t, db, memberID, "Pray Room", "Room for prayers")
 
-	titles := testutil.SeedPrayerTitlesWithTime(t, db, room.ID, 3)
+	titles := testutil2.SeedPrayerTitlesWithTime(t, db, room.ID, 3)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.GET("/api/v1/prayers", prayerHandler.FetchTitlesByInfiniteScroll)
 
-	recorder := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+	recorder := testutil2.ExecuteRequest(t, router, testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    fmt.Sprintf("/api/v1/prayers?roomId=%d", room.ID),
 	})
@@ -30,17 +30,17 @@ func TestFetchPrayerTitles_ReturnsLatestTitles(t *testing.T) {
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
 	var response prayer.PrayerTitleInfiniteScrollResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 	assert.Len(t, response.PrayerTitles, len(titles))
 	assert.Equal(t, []int64{titles[2].ID, titles[1].ID, titles[0].ID}, extractPrayerTitleIDs(response.PrayerTitles))
 }
 
 func TestFetchPrayerTitles_UsesCursorForNextPage(t *testing.T) {
 	prayerHandler, db, memberID := setupTestEnvironment(t)
-	room := testutil.CreateTestRoom(t, db, memberID, "Cursor Room", "Room for pagination")
+	room := testutil2.CreateTestRoom(t, db, memberID, "Cursor Room", "Room for pagination")
 
 	total := prayer.PrayerTitleInfiniteScrollLimit + 2
-	titles := testutil.SeedPrayerTitlesWithTime(t, db, room.ID, total)
+	titles := testutil2.SeedPrayerTitlesWithTime(t, db, room.ID, total)
 	cursorIndex := total - prayer.PrayerTitleInfiniteScrollLimit
 	cursorTimestamp := titles[cursorIndex].CreatedAt.UTC().Format(time.RFC3339Nano)
 
@@ -49,11 +49,11 @@ func TestFetchPrayerTitles_UsesCursorForNextPage(t *testing.T) {
 		expectedIDs = append(expectedIDs, titles[i].ID)
 	}
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.GET("/api/v1/prayers", prayerHandler.FetchTitlesByInfiniteScroll)
 
 	cursorParam := url.QueryEscape(cursorTimestamp)
-	recorder := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+	recorder := testutil2.ExecuteRequest(t, router, testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    fmt.Sprintf("/api/v1/prayers?roomId=%d&after=%s", room.ID, cursorParam),
 	})
@@ -61,24 +61,24 @@ func TestFetchPrayerTitles_UsesCursorForNextPage(t *testing.T) {
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
 	var response prayer.PrayerTitleInfiniteScrollResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 	assert.Len(t, response.PrayerTitles, cursorIndex)
 	assert.Equal(t, expectedIDs, extractPrayerTitleIDs(response.PrayerTitles))
 }
 
 func TestFetchPrayerTitles_ConsecutiveScrolling(t *testing.T) {
 	prayerHandler, db, memberID := setupTestEnvironment(t)
-	room := testutil.CreateTestRoom(t, db, memberID, "Scroll Room", "Room for consecutive scrolling")
+	room := testutil2.CreateTestRoom(t, db, memberID, "Scroll Room", "Room for consecutive scrolling")
 
 	// Create enough titles for 3 pages: limit*2 + 5 = 25 titles
 	total := prayer.PrayerTitleInfiniteScrollLimit*2 + 5
-	titles := testutil.SeedPrayerTitlesWithTime(t, db, room.ID, total)
+	titles := testutil2.SeedPrayerTitlesWithTime(t, db, room.ID, total)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.GET("/api/v1/prayers", prayerHandler.FetchTitlesByInfiniteScroll)
 
 	// First page request
-	recorder1 := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+	recorder1 := testutil2.ExecuteRequest(t, router, testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    fmt.Sprintf("/api/v1/prayers?roomId=%d", room.ID),
 	})
@@ -86,7 +86,7 @@ func TestFetchPrayerTitles_ConsecutiveScrolling(t *testing.T) {
 	assert.Equal(t, http.StatusOK, recorder1.Code)
 
 	var response1 prayer.PrayerTitleInfiniteScrollResponse
-	testutil.ParseResponse(t, recorder1, &response1)
+	testutil2.ParseResponse(t, recorder1, &response1)
 	assert.Len(t, response1.PrayerTitles, prayer.PrayerTitleInfiniteScrollLimit, "First page should return limit items")
 
 	// Verify first page returns latest titles in descending order
@@ -100,7 +100,7 @@ func TestFetchPrayerTitles_ConsecutiveScrolling(t *testing.T) {
 	// Second page request using last item's CreatedAt as cursor
 	lastItemPage1 := response1.PrayerTitles[len(response1.PrayerTitles)-1]
 	cursorParam := url.QueryEscape(lastItemPage1.CreatedTime.UTC().Format(time.RFC3339Nano))
-	recorder2 := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+	recorder2 := testutil2.ExecuteRequest(t, router, testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    fmt.Sprintf("/api/v1/prayers?roomId=%d&after=%s", room.ID, cursorParam),
 	})
@@ -108,7 +108,7 @@ func TestFetchPrayerTitles_ConsecutiveScrolling(t *testing.T) {
 	assert.Equal(t, http.StatusOK, recorder2.Code)
 
 	var response2 prayer.PrayerTitleInfiniteScrollResponse
-	testutil.ParseResponse(t, recorder2, &response2)
+	testutil2.ParseResponse(t, recorder2, &response2)
 	assert.Len(t, response2.PrayerTitles, prayer.PrayerTitleInfiniteScrollLimit, "Second page should return limit items")
 
 	// Verify second page returns next set of titles
@@ -122,7 +122,7 @@ func TestFetchPrayerTitles_ConsecutiveScrolling(t *testing.T) {
 	// Third page request using last item's CreatedAt as cursor
 	lastItemPage2 := response2.PrayerTitles[len(response2.PrayerTitles)-1]
 	cursorParam2 := url.QueryEscape(lastItemPage2.CreatedTime.UTC().Format(time.RFC3339Nano))
-	recorder3 := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+	recorder3 := testutil2.ExecuteRequest(t, router, testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    fmt.Sprintf("/api/v1/prayers?roomId=%d&after=%s", room.ID, cursorParam2),
 	})
@@ -130,7 +130,7 @@ func TestFetchPrayerTitles_ConsecutiveScrolling(t *testing.T) {
 	assert.Equal(t, http.StatusOK, recorder3.Code)
 
 	var response3 prayer.PrayerTitleInfiniteScrollResponse
-	testutil.ParseResponse(t, recorder3, &response3)
+	testutil2.ParseResponse(t, recorder3, &response3)
 	remainingCount := total - prayer.PrayerTitleInfiniteScrollLimit*2
 	assert.Len(t, response3.PrayerTitles, remainingCount, "Third page should return remaining items")
 
@@ -154,13 +154,13 @@ func TestFetchPrayerTitles_ConsecutiveScrolling(t *testing.T) {
 
 func TestFetchPrayerTitles_InvalidCursor(t *testing.T) {
 	prayerHandler, db, memberID := setupTestEnvironment(t)
-	room := testutil.CreateTestRoom(t, db, memberID, "Invalid Cursor Room", "Room for invalid cursor test")
-	testutil.CreateTestPrayerTitle(t, db, room.ID, "Pray for family")
+	room := testutil2.CreateTestRoom(t, db, memberID, "Invalid Cursor Room", "Room for invalid cursor test")
+	testutil2.CreateTestPrayerTitle(t, db, room.ID, "Pray for family")
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.GET("/api/v1/prayers", prayerHandler.FetchTitlesByInfiniteScroll)
 
-	recorder := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+	recorder := testutil2.ExecuteRequest(t, router, testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    fmt.Sprintf("/api/v1/prayers?roomId=%d&after=invalid", room.ID),
 	})
@@ -168,19 +168,19 @@ func TestFetchPrayerTitles_InvalidCursor(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, recorder.Code)
 
 	var response sharedError.ErrorResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 	assert.Equal(t, "PRAYER-006", response.Code)
 }
 
 func TestFetchPrayerTitles_MemberNotInRoom(t *testing.T) {
 	prayerHandler, db, memberID := setupTestEnvironment(t)
-	otherMember := testutil.CreateTestMemberWithIndex(t, db, 1)
-	otherRoom := testutil.CreateTestRoom(t, db, int64(otherMember.ID), "Another Room", "Not joined")
+	otherMember := testutil2.CreateTestMemberWithIndex(t, db, 1)
+	otherRoom := testutil2.CreateTestRoom(t, db, int64(otherMember.ID), "Another Room", "Not joined")
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.GET("/api/v1/prayers", prayerHandler.FetchTitlesByInfiniteScroll)
 
-	recorder := testutil.ExecuteRequest(t, router, testutil.TestRequest{
+	recorder := testutil2.ExecuteRequest(t, router, testutil2.TestRequest{
 		Method: http.MethodGet,
 		URL:    fmt.Sprintf("/api/v1/prayers?roomId=%d", otherRoom.ID),
 	})
@@ -188,7 +188,7 @@ func TestFetchPrayerTitles_MemberNotInRoom(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 
 	var response sharedError.ErrorResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 	assert.Equal(t, "ROOM-002", response.Code)
 }
 

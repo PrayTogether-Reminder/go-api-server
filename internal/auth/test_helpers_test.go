@@ -3,9 +3,9 @@ package auth_test
 import (
 	"testing"
 
+	testutil2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/token"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/token"
 	"gorm.io/gorm"
 )
 
@@ -15,18 +15,18 @@ func setupTestEnvironment(t *testing.T) (*auth.AuthHandler, *token.JWTManager) {
 	t.Helper()
 
 	// Setup test database
-	db := testutil.SetupTestDB(t)
+	db := testutil2.SetupTestDB(t)
 	t.Cleanup(func() {
-		testutil.CleanupTestDB(t, db)
+		testutil2.CleanupTestDB(t, db)
 	})
 
-	config := testutil.NewTestConfig()
+	config := testutil2.NewTestConfig()
 	// Setup dependencies with mock SMTP
-	memberRepo := testutil.NewMemberRepository()
-	memberService := testutil.NewMemberService(memberRepo)
-	mockTokenManager := testutil.NewRealJWTManager(config)
+	memberRepo := testutil2.NewMemberRepository()
+	memberService := testutil2.NewMemberService(memberRepo)
+	mockTokenManager := testutil2.NewRealJWTManager(config)
 	authService := auth.NewAuthService()
-	otpService, _ := testutil.NewTestOTPService()
+	otpService, _ := testutil2.NewTestOTPService()
 	refreshTokenRepo := auth.NewRefreshTokenRepository()
 	refreshTokenService := auth.NewRefreshTokenService(refreshTokenRepo)
 
@@ -42,18 +42,18 @@ func setupTestEnvironmentWithDB(t *testing.T) (*auth.AuthHandler, *gorm.DB) {
 	t.Helper()
 
 	// Setup test database
-	db := testutil.SetupTestDB(t)
+	db := testutil2.SetupTestDB(t)
 	t.Cleanup(func() {
-		testutil.CleanupTestDB(t, db)
+		testutil2.CleanupTestDB(t, db)
 	})
 
-	config := testutil.NewTestConfig()
+	config := testutil2.NewTestConfig()
 	// Setup dependencies
-	memberRepo := testutil.NewMemberRepository()
-	memberService := testutil.NewMemberService(memberRepo)
-	mockTokenManager := testutil.NewRealJWTManager(config)
+	memberRepo := testutil2.NewMemberRepository()
+	memberService := testutil2.NewMemberService(memberRepo)
+	mockTokenManager := testutil2.NewRealJWTManager(config)
 	authService := auth.NewAuthService()
-	otpService, _ := testutil.NewTestOTPService()
+	otpService, _ := testutil2.NewTestOTPService()
 	refreshTokenRepo := auth.NewRefreshTokenRepository()
 	refreshTokenService := auth.NewRefreshTokenService(refreshTokenRepo)
 

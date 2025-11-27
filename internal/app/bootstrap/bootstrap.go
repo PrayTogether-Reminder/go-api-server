@@ -1,12 +1,13 @@
 package bootstrap
 
 import (
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/middleware"
-	"github.com/gin-gonic/gin"
 	"io"
 	"log/slog"
 	"net/http"
+
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
+	middleware2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/middleware"
+	"github.com/gin-gonic/gin"
 )
 
 // Bootstrap handles common server setup that can be reused across projects
@@ -40,10 +41,10 @@ func (b *Bootstrap) SetupEngine() *gin.Engine {
 
 	// Essential middleware (common for all projects)
 	engine.Use(gin.CustomRecovery(b.recoveryHandler))
-	engine.Use(middleware.RequestID())
-	engine.Use(middleware.CORS(b.cfg))
-	engine.Use(middleware.Timeout(middleware.DefaultTimeout)) // 30 second global timeout
-	engine.Use(middleware.LoggerMiddleware())
+	engine.Use(middleware2.RequestID())
+	engine.Use(middleware2.CORS(b.cfg))
+	engine.Use(middleware2.Timeout(middleware2.DefaultTimeout)) // 30 second global timeout
+	engine.Use(middleware2.LoggerMiddleware())
 
 	// Note: Health endpoints are now handled in routes.go following Clean Architecture
 	// This keeps the bootstrap focused on middleware setup only
@@ -58,10 +59,10 @@ func (b *Bootstrap) recoveryHandler(c *gin.Context, recovered interface{}) {
 			"error", err,
 			"path", c.Request.URL.Path,
 			"method", c.Request.Method,
-			"request_id", middleware.GetRequestID(c),
+			"request_id", middleware2.GetRequestID(c),
 		)
 	}
 	c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-		"error": "Internal server error", "request_id": middleware.GetRequestID(c),
+		"error": "Internal server error", "request_id": middleware2.GetRequestID(c),
 	})
 }

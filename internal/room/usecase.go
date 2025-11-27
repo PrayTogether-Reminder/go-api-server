@@ -3,8 +3,8 @@ package room
 import (
 	"context"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
-	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/database"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
 	"gorm.io/gorm"
 )
 

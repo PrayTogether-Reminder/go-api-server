@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"testing"
 
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
+	testutil2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/prayer"
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,13 +16,13 @@ func TestCreatePrayerTitle_Success(t *testing.T) {
 	prayerHandler, db, memberID := setupTestEnvironment(t)
 
 	// Given: Create a test room with the member
-	testRoom := testutil.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
+	testRoom := testutil2.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.POST("/api/v1/prayers", prayerHandler.CreatePrayerTitle)
 
 	// Given: Valid create prayer title request
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodPost,
 		URL:    "/api/v1/prayers",
 		Body: prayer.CreatePrayerTitleRequest{
@@ -32,13 +32,13 @@ func TestCreatePrayerTitle_Success(t *testing.T) {
 	}
 
 	// When: Execute create prayer title request
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify response
 	assert.Equal(t, http.StatusCreated, recorder.Code)
 
 	var response prayer.CreatePrayerTitleResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 	assert.NotEmpty(t, response.ID)
 	assert.Equal(t, "Please pray for my family", response.Title)
 	assert.NotEmpty(t, response.CreatedTime)
@@ -56,9 +56,9 @@ func TestCreatePrayerTitle_ValidationError_MissingRequiredFields(t *testing.T) {
 	prayerHandler, db, memberID := setupTestEnvironment(t)
 
 	// Given: Create a test room
-	testRoom := testutil.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
+	testRoom := testutil2.CreateTestRoom(t, db, memberID, "Test Room", "Test Description")
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.POST("/api/v1/prayers", prayerHandler.CreatePrayerTitle)
 
 	testCases := []struct {
@@ -93,19 +93,19 @@ func TestCreatePrayerTitle_ValidationError_MissingRequiredFields(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// When: Execute request with invalid field
-			request := testutil.TestRequest{
+			request := testutil2.TestRequest{
 				Method: http.MethodPost,
 				URL:    "/api/v1/prayers",
 				Body:   tc.requestBody,
 			}
 
-			recorder := testutil.ExecuteRequest(t, router, request)
+			recorder := testutil2.ExecuteRequest(t, router, request)
 
 			// Then: Verify validation error
 			assert.Equal(t, http.StatusBadRequest, recorder.Code, tc.description)
 
 			var errorResponse sharedError.ErrorResponse
-			testutil.ParseResponse(t, recorder, &errorResponse)
+			testutil2.ParseResponse(t, recorder, &errorResponse)
 			assert.NotEmpty(t, errorResponse.Status, tc.description)
 			assert.NotEmpty(t, errorResponse.Message, tc.description)
 			assert.NotEmpty(t, errorResponse.Code, tc.description)
@@ -117,7 +117,7 @@ func TestCreatePrayerTitle_ValidationError_InvalidRoomID(t *testing.T) {
 	// Given: Setup test environment
 	prayerHandler, _, memberID := setupTestEnvironment(t)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.POST("/api/v1/prayers", prayerHandler.CreatePrayerTitle)
 
 	testCases := []struct {
@@ -140,7 +140,7 @@ func TestCreatePrayerTitle_ValidationError_InvalidRoomID(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Given: Request with invalid roomId
-			request := testutil.TestRequest{
+			request := testutil2.TestRequest{
 				Method: http.MethodPost,
 				URL:    "/api/v1/prayers",
 				Body: prayer.CreatePrayerTitleRequest{
@@ -150,13 +150,13 @@ func TestCreatePrayerTitle_ValidationError_InvalidRoomID(t *testing.T) {
 			}
 
 			// When: Execute request
-			recorder := testutil.ExecuteRequest(t, router, request)
+			recorder := testutil2.ExecuteRequest(t, router, request)
 
 			// Then: Verify validation error
 			assert.Equal(t, http.StatusBadRequest, recorder.Code, tc.description)
 
 			var errorResponse sharedError.ErrorResponse
-			testutil.ParseResponse(t, recorder, &errorResponse)
+			testutil2.ParseResponse(t, recorder, &errorResponse)
 			assert.NotEmpty(t, errorResponse.Message, tc.description)
 		})
 	}
@@ -166,12 +166,12 @@ func TestCreatePrayerTitle_RoomNotFound(t *testing.T) {
 	// Given: Setup test environment
 	prayerHandler, _, memberID := setupTestEnvironment(t)
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.POST("/api/v1/prayers", prayerHandler.CreatePrayerTitle)
 
 	// Given: Request with non-existent roomId
 	nonExistentRoomID := int64(99999)
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodPost,
 		URL:    "/api/v1/prayers",
 		Body: prayer.CreatePrayerTitleRequest{
@@ -181,13 +181,13 @@ func TestCreatePrayerTitle_RoomNotFound(t *testing.T) {
 	}
 
 	// When: Execute request
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify not found error
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 
 	var errorResponse sharedError.ErrorResponse
-	testutil.ParseResponse(t, recorder, &errorResponse)
+	testutil2.ParseResponse(t, recorder, &errorResponse)
 	assert.NotEmpty(t, errorResponse.Message)
 }
 
@@ -196,14 +196,14 @@ func TestCreatePrayerTitle_MemberNotInRoom(t *testing.T) {
 	prayerHandler, db, memberID := setupTestEnvironment(t)
 
 	// Given: Create another member and a room owned by that member
-	anotherMember := testutil.CreateTestMemberWithIndex(t, db, 1)
-	roomOwnedByAnother := testutil.CreateTestRoom(t, db, anotherMember.ID, "Another Room", "Test Description")
+	anotherMember := testutil2.CreateTestMemberWithIndex(t, db, 1)
+	roomOwnedByAnother := testutil2.CreateTestRoom(t, db, anotherMember.ID, "Another Room", "Test Description")
 
-	router := testutil.SetupAuthenticatedRouter(memberID)
+	router := testutil2.SetupAuthenticatedRouter(memberID)
 	router.POST("/api/v1/prayers", prayerHandler.CreatePrayerTitle)
 
 	// Given: Request to create prayer title in a room the member doesn't belong to
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodPost,
 		URL:    "/api/v1/prayers",
 		Body: prayer.CreatePrayerTitleRequest{
@@ -213,12 +213,12 @@ func TestCreatePrayerTitle_MemberNotInRoom(t *testing.T) {
 	}
 
 	// When: Execute request
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: Verify not found error (member not in room)
 	assert.Equal(t, http.StatusNotFound, recorder.Code)
 
 	var errorResponse sharedError.ErrorResponse
-	testutil.ParseResponse(t, recorder, &errorResponse)
+	testutil2.ParseResponse(t, recorder, &errorResponse)
 	assert.NotEmpty(t, errorResponse.Message)
 }

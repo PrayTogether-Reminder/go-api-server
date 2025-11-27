@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	testutil2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,12 +18,12 @@ func TestReissueToken_Success(t *testing.T) {
 	authHandler, db := setupTestEnvironmentWithDB(t)
 
 	// 테스트 회원 생성
-	member := testutil.CreateTestMember(t, db)
+	member := testutil2.CreateTestMember(t, db)
 	memberIDStr := strconv.FormatInt(member.ID, 10)
 
 	// 실제 JWT Manager 생성 (토큰 발급/검증을 위해)
-	cfg := testutil.NewTestConfig()
-	tokenManager := testutil.NewRealJWTManager(cfg)
+	cfg := testutil2.NewTestConfig()
+	tokenManager := testutil2.NewRealJWTManager(cfg)
 
 	// Refresh Token 생성 및 저장
 	refreshToken, err := tokenManager.GenerateRefreshToken(memberIDStr, member.Email)
@@ -38,10 +38,10 @@ func TestReissueToken_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	// When: 토큰 재발급 요청
-	router := testutil.SetupTestRouter()
+	router := testutil2.SetupTestRouter()
 	router.POST("/api/v1/auth/reissue-token", authHandler.ReissueToken)
 
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodPost,
 		URL:    "/api/v1/auth/reissue-token",
 		Body: map[string]interface{}{
@@ -49,13 +49,13 @@ func TestReissueToken_Success(t *testing.T) {
 		},
 	}
 
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: 응답 검증
 	assert.Equal(t, http.StatusOK, recorder.Code, "Expected HTTP 200 OK for successful token reissue")
 
 	var response auth.AuthTokenReissueResponse
-	testutil.ParseResponse(t, recorder, &response)
+	testutil2.ParseResponse(t, recorder, &response)
 
 	assert.NotEmpty(t, response.AccessToken, "Access token should not be empty")
 	assert.NotEmpty(t, response.RefreshToken, "Refresh token should not be empty")
@@ -68,16 +68,16 @@ func TestReissueToken_InvalidToken(t *testing.T) {
 	authHandler, db := setupTestEnvironmentWithDB(t)
 
 	// 존재하지 않는 memberID로 토큰 생성 (JWT 형식은 맞지만 member가 없음)
-	cfg := testutil.NewTestConfig()
-	tokenManager := testutil.NewRealJWTManager(cfg)
+	cfg := testutil2.NewTestConfig()
+	tokenManager := testutil2.NewRealJWTManager(cfg)
 	invalidToken, err := tokenManager.GenerateRefreshToken("99999", "nonexistent@example.com")
 	assert.NoError(t, err)
 
 	// When: 존재하지 않는 member의 토큰으로 재발급 요청
-	router := testutil.SetupTestRouter()
+	router := testutil2.SetupTestRouter()
 	router.POST("/api/v1/auth/reissue-token", authHandler.ReissueToken)
 
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodPost,
 		URL:    "/api/v1/auth/reissue-token",
 		Body: map[string]interface{}{
@@ -85,7 +85,7 @@ func TestReissueToken_InvalidToken(t *testing.T) {
 		},
 	}
 
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: 404 Not Found 응답 검증 (member가 존재하지 않음)
 	assert.Equal(t, http.StatusNotFound, recorder.Code, "Expected HTTP 404 Not Found for non-existent member")
@@ -99,22 +99,22 @@ func TestReissueToken_TokenNotFound(t *testing.T) {
 	authHandler, db := setupTestEnvironmentWithDB(t)
 
 	// 테스트 회원 생성
-	member := testutil.CreateTestMember(t, db)
+	member := testutil2.CreateTestMember(t, db)
 	memberIDStr := strconv.FormatInt(member.ID, 10)
 
 	// 실제 JWT Manager 생성
-	cfg := testutil.NewTestConfig()
-	tokenManager := testutil.NewRealJWTManager(cfg)
+	cfg := testutil2.NewTestConfig()
+	tokenManager := testutil2.NewRealJWTManager(cfg)
 
 	// Refresh Token 생성 (하지만 DB에 저장하지 않음)
 	refreshToken, err := tokenManager.GenerateRefreshToken(memberIDStr, member.Email)
 	assert.NoError(t, err)
 
 	// When: DB에 저장되지 않은 토큰으로 재발급 요청
-	router := testutil.SetupTestRouter()
+	router := testutil2.SetupTestRouter()
 	router.POST("/api/v1/auth/reissue-token", authHandler.ReissueToken)
 
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodPost,
 		URL:    "/api/v1/auth/reissue-token",
 		Body: map[string]interface{}{
@@ -122,7 +122,7 @@ func TestReissueToken_TokenNotFound(t *testing.T) {
 		},
 	}
 
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: 401 Unauthorized 응답 검증
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code, "Expected HTTP 401 Unauthorized for token not found")
@@ -134,7 +134,7 @@ func TestReissueToken_ExpiredToken(t *testing.T) {
 	authHandler, db := setupTestEnvironmentWithDB(t)
 
 	// 테스트 회원 생성
-	member := testutil.CreateTestMember(t, db)
+	member := testutil2.CreateTestMember(t, db)
 
 	// 만료된 토큰을 DB에 저장
 	refreshTokenRepo := auth.NewRefreshTokenRepository()
@@ -145,10 +145,10 @@ func TestReissueToken_ExpiredToken(t *testing.T) {
 	assert.NoError(t, err)
 
 	// When: 만료된 토큰으로 재발급 요청
-	router := testutil.SetupTestRouter()
+	router := testutil2.SetupTestRouter()
 	router.POST("/api/v1/auth/reissue-token", authHandler.ReissueToken)
 
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodPost,
 		URL:    "/api/v1/auth/reissue-token",
 		Body: map[string]interface{}{
@@ -156,7 +156,7 @@ func TestReissueToken_ExpiredToken(t *testing.T) {
 		},
 	}
 
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: 401 Unauthorized 응답 검증
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code, "Expected HTTP 401 Unauthorized for expired token")
@@ -168,12 +168,12 @@ func TestReissueToken_TokenMismatch(t *testing.T) {
 	authHandler, db := setupTestEnvironmentWithDB(t)
 
 	// 두 명의 회원 생성
-	member1 := testutil.CreateTestMemberWithIndex(t, db, 0)
-	member2 := testutil.CreateTestMemberWithIndex(t, db, 1)
+	member1 := testutil2.CreateTestMemberWithIndex(t, db, 0)
+	member2 := testutil2.CreateTestMemberWithIndex(t, db, 1)
 
 	// 실제 JWT Manager 생성
-	cfg := testutil.NewTestConfig()
-	tokenManager := testutil.NewRealJWTManager(cfg)
+	cfg := testutil2.NewTestConfig()
+	tokenManager := testutil2.NewRealJWTManager(cfg)
 
 	// member1의 토큰 생성
 	memberID1Str := strconv.FormatInt(member1.ID, 10)
@@ -193,10 +193,10 @@ func TestReissueToken_TokenMismatch(t *testing.T) {
 	assert.NoError(t, err)
 
 	// When: member1의 실제 토큰으로 재발급 요청 (하지만 DB에는 다른 토큰이 저장됨)
-	router := testutil.SetupTestRouter()
+	router := testutil2.SetupTestRouter()
 	router.POST("/api/v1/auth/reissue-token", authHandler.ReissueToken)
 
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodPost,
 		URL:    "/api/v1/auth/reissue-token",
 		Body: map[string]interface{}{
@@ -204,7 +204,7 @@ func TestReissueToken_TokenMismatch(t *testing.T) {
 		},
 	}
 
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: 401 Unauthorized 응답 검증
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code, "Expected HTTP 401 Unauthorized for token mismatch")
@@ -216,10 +216,10 @@ func TestReissueToken_MissingRefreshToken(t *testing.T) {
 	authHandler, _ := setupTestEnvironmentWithDB(t)
 
 	// When: RefreshToken 없이 요청
-	router := testutil.SetupTestRouter()
+	router := testutil2.SetupTestRouter()
 	router.POST("/api/v1/auth/reissue-token", authHandler.ReissueToken)
 
-	request := testutil.TestRequest{
+	request := testutil2.TestRequest{
 		Method: http.MethodPost,
 		URL:    "/api/v1/auth/reissue-token",
 		Body:   map[string]interface{}{
@@ -227,7 +227,7 @@ func TestReissueToken_MissingRefreshToken(t *testing.T) {
 		},
 	}
 
-	recorder := testutil.ExecuteRequest(t, router, request)
+	recorder := testutil2.ExecuteRequest(t, router, request)
 
 	// Then: 400 Bad Request 응답 검증
 	assert.Equal(t, http.StatusBadRequest, recorder.Code, "Expected HTTP 400 Bad Request for missing refresh token")

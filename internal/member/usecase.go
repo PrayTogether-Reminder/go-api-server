@@ -4,11 +4,11 @@ import (
 	"context"
 	"strings"
 
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/database"
+	sharedDomain "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/domain"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/logger"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
-	sharedDomain "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/domain"
-	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
 	"gorm.io/gorm"
 )
 

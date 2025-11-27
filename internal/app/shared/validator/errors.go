@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
+	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
 	"github.com/go-playground/validator/v10"
 )
 

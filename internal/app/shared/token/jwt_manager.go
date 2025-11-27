@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
 	"github.com/golang-jwt/jwt/v5"
 )
 

@@ -3,9 +3,10 @@ package bootstrap
 import (
 	"context"
 	"fmt"
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/config"
 	"log/slog"
 	"net/http"
+
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
 )
 
 // Server represents the HTTP server (lifecycle management only)
