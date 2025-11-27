@@ -92,3 +92,16 @@ func (s *MemberService) CreateMember(ctx context.Context, db *gorm.DB, member *m
 
 	return nil
 }
+
+// DeleteMember - 회원 삭제
+func (s *MemberService) DeleteMember(ctx context.Context, db *gorm.DB, memberID int64) error {
+	err := s.memberRepository.Delete(ctx, db, memberID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("회원을 찾을 수 없습니다: %w", ErrMemberNotFound)
+		}
+		return fmt.Errorf("회원 삭제 실패: %w", err)
+	}
+
+	return nil
+}

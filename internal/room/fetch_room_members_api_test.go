@@ -1,43 +1,19 @@
-package room
+package room_test
 
 import (
 	"fmt"
 	"net/http"
 	"testing"
 
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/room"
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/error"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/testutil"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
-
-func setupFetchRoomMembersTestEnvironment(t *testing.T) (*RoomHandler, *gorm.DB, int64) {
-	t.Helper()
-
-	db := testutil.SetupTestDB(t)
-
-	// Create repositories
-	roomRepo := NewRoomRepository()
-	memberRoomRepo := NewMemberRoomRepository()
-	memberRepo := testutil.NewMemberRepository(db)
-
-	// Create member service for validation
-	memberService := testutil.NewMemberService(memberRepo)
-
-	// Create room service and handler
-	roomService := NewRoomService(roomRepo, memberRoomRepo, memberService)
-	roomUseCase := NewRoomUseCase(db, roomService)
-	roomHandler := NewRoomHandler(roomUseCase)
-
-	// Create test member
-	testMember := testutil.CreateTestMember(t, db)
-
-	return roomHandler, db, int64(testMember.ID)
-}
 
 func TestFetchRoomMembers_Success(t *testing.T) {
 	// Given: Setup test environment
-	roomHandler, db, ownerID := setupFetchRoomMembersTestEnvironment(t)
+	roomHandler, db, ownerID := setupTestEnvironment(t)
 	router := testutil.SetupAuthenticatedRouter(ownerID)
 	router.GET("/api/v1/rooms/:roomId/members", roomHandler.FetchRoomMembers)
 
@@ -60,7 +36,7 @@ func TestFetchRoomMembers_Success(t *testing.T) {
 	// Then: Verify response
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
-	var response FetchRoomMemberResponse
+	var response room.FetchRoomMemberResponse
 	testutil.ParseResponse(t, recorder, &response)
 
 	// Verify member count
@@ -92,7 +68,7 @@ func TestFetchRoomMembers_Success(t *testing.T) {
 
 func TestFetchRoomMembers_InvalidRoomID(t *testing.T) {
 	// Given: Setup test environment
-	roomHandler, _, ownerID := setupFetchRoomMembersTestEnvironment(t)
+	roomHandler, _, ownerID := setupTestEnvironment(t)
 	router := testutil.SetupAuthenticatedRouter(ownerID)
 	router.GET("/api/v1/rooms/:roomId/members", roomHandler.FetchRoomMembers)
 
@@ -136,7 +112,7 @@ func TestFetchRoomMembers_InvalidRoomID(t *testing.T) {
 
 func TestFetchRoomMembers_NonexistentRoom(t *testing.T) {
 	// Given: Setup test environment
-	roomHandler, _, ownerID := setupFetchRoomMembersTestEnvironment(t)
+	roomHandler, _, ownerID := setupTestEnvironment(t)
 	router := testutil.SetupAuthenticatedRouter(ownerID)
 	router.GET("/api/v1/rooms/:roomId/members", roomHandler.FetchRoomMembers)
 
@@ -162,7 +138,7 @@ func TestFetchRoomMembers_NonexistentRoom(t *testing.T) {
 
 func TestFetchRoomMembers_NotMemberOfRoom(t *testing.T) {
 	// Given: Setup test environment
-	roomHandler, db, ownerID := setupFetchRoomMembersTestEnvironment(t)
+	roomHandler, db, ownerID := setupTestEnvironment(t)
 
 	// Create another member who is not part of the room
 	otherMember := testutil.CreateTestMemberWithIndex(t, db, 1)
@@ -192,7 +168,7 @@ func TestFetchRoomMembers_NotMemberOfRoom(t *testing.T) {
 
 func TestFetchRoomMembers_EmptyRoom(t *testing.T) {
 	// Given: Setup test environment with empty database
-	roomHandler, db, ownerID := setupFetchRoomMembersTestEnvironment(t)
+	roomHandler, db, ownerID := setupTestEnvironment(t)
 	router := testutil.SetupAuthenticatedRouter(ownerID)
 	router.GET("/api/v1/rooms/:roomId/members", roomHandler.FetchRoomMembers)
 
@@ -210,7 +186,7 @@ func TestFetchRoomMembers_EmptyRoom(t *testing.T) {
 	// Then: Verify response
 	assert.Equal(t, http.StatusOK, recorder.Code)
 
-	var response FetchRoomMemberResponse
+	var response room.FetchRoomMemberResponse
 	testutil.ParseResponse(t, recorder, &response)
 
 	// Verify only owner is in the room

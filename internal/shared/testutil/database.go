@@ -27,6 +27,7 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 		&model.MemberRoom{},
 		&model.Room{},
 		&model.Member{},
+		&model.RefreshToken{},
 		&model.PrayerTitle{},
 		&model.PrayerContent{},
 		// Add other models here as needed

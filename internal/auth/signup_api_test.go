@@ -1,7 +1,6 @@
 package auth_test
 
 import (
-	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"net/http"
 	"testing"
 
@@ -11,27 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// setupTestEnvironment creates all dependencies needed for auth handler tests
-func setupTestEnvironment(t *testing.T) (*auth.AuthHandler, *testutil.MockTokenManager) {
-	t.Helper()
-
-	// Setup test database
-	db := testutil.SetupTestDB(t)
-	t.Cleanup(func() {
-		testutil.CleanupTestDB(t, db)
-	})
-
-	// Setup dependencies
-	memberRepo := member.NewMemberRepository(db)
-	memberService := testutil.NewMemberService(memberRepo)
-	mockTokenManager := testutil.NewMockTokenManager()
-	authService := auth.NewAuthService()
-	authUseCase := auth.NewAuthUseCase(db, memberService, mockTokenManager, authService)
-	authHandler := auth.NewAuthHandler(authUseCase)
-
-	return authHandler, mockTokenManager
-}
 
 func TestSignup_Success(t *testing.T) {
 	// Given: Setup test environment
