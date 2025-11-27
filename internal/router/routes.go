@@ -65,6 +65,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 		authV1.POST("/otp/email", authHandler.RequestEmailOTP)
 		authV1.POST("/otp/email/verification", authHandler.VerifyEmailOTP)
 		authV1.POST("/reissue-token", authHandler.ReissueToken)
+		authV1.POST("/logout", middleware.JWT(cfg), authHandler.Logout)
 		authV1.DELETE("/withdraw", middleware.JWT(cfg), authHandler.Withdraw)
 	}
 

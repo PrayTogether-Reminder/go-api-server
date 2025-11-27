@@ -123,6 +123,25 @@ func (a *AuthHandler) Withdraw(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func (a *AuthHandler) Logout(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	if err := a.authUseCase.Logout(c.Request.Context(), memberID); err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 func (h *AuthHandler) ReissueToken(c *gin.Context) {
 	var request AuthTokenReissueRequest
 

@@ -151,6 +151,23 @@ func (u *AuthUseCase) Withdraw(ctx context.Context, memberID int64) (*sharedHttp
 	return &sharedHttp.MessageResponse{Message: "회원 탈퇴를 완료했습니다.\n 함께 기도해 주셔 감사합니다."}, nil
 }
 
+func (u *AuthUseCase) Logout(ctx context.Context, memberID int64) error {
+	log := logger.FromContext(ctx)
+	log.Info("회원 로그아웃 시도", "memberID", memberID)
+
+	if err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
+		if err := u.refreshTokenService.Delete(ctx, tx, memberID); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	log.Info("회원 로그아웃 성공", "memberID", memberID)
+	return nil
+}
+
 // ReissueAuthToken - Refresh Token을 사용하여 Access Token과 Refresh Token 재발급
 func (u *AuthUseCase) ReissueAuthToken(ctx context.Context, request *AuthTokenReissueRequest) (*AuthTokenReissueResponse, error) {
 	var newAccessToken string
