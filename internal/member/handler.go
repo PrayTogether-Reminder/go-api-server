@@ -73,3 +73,29 @@ func (h *MemberHandler) UpdateProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+// SearchMembers - 회원 검색 API
+func (h *MemberHandler) SearchMembers(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	var request SearchMemberRequest
+	if !sharedHttp.BindQuery(c, &request) {
+		return
+	}
+
+	response, err := h.memberUseCase.SearchMembers(c.Request.Context(), memberID, request.Name)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}

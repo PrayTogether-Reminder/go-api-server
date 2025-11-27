@@ -2,10 +2,13 @@ package member
 
 import (
 	"context"
+	"strings"
+
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/database"
 	sharedDomain "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/domain"
 	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/shared/http"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/shared/logger"
 	"gorm.io/gorm"
 )
 
@@ -56,4 +59,36 @@ func (u *MemberUseCase) UpdateProfile(ctx context.Context, memberID int64, reque
 	}
 
 	return &sharedHttp.MessageResponse{Message: "프로필을 변경했습니다."}, nil
+}
+
+// SearchMembers - 이름으로 회원 검색
+func (u *MemberUseCase) SearchMembers(ctx context.Context, memberID int64, name string) (*SearchMemberResponse, error) {
+	log := logger.FromContext(ctx)
+	log.Info("회원 검색 요청", "memberID", memberID, "keyword", name)
+
+	results, err := u.memberService.SearchMembers(ctx, u.db, name)
+	if err != nil {
+		return nil, err
+	}
+
+	members := make([]SearchMemberDTO, 0, len(results))
+	for _, result := range results {
+		var suffix *string
+		if strings.TrimSpace(result.PhoneNumber) != "" {
+			phone, err := sharedDomain.NewPhoneNumber(result.PhoneNumber)
+			if err != nil {
+				return nil, err
+			}
+			s := phone.GetSuffix()
+			suffix = &s
+		}
+
+		members = append(members, SearchMemberDTO{
+			ID:                result.ID,
+			Name:              result.Name,
+			PhoneNumberSuffix: suffix,
+		})
+	}
+
+	return &SearchMemberResponse{Members: members}, nil
 }

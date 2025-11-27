@@ -129,3 +129,12 @@ func (s *MemberService) UpdateProfile(ctx context.Context, db *gorm.DB, memberID
 
 	return nil
 }
+
+// SearchMembers - 이름으로 회원 검색
+func (s *MemberService) SearchMembers(ctx context.Context, db *gorm.DB, name string) ([]SearchMemberResult, error) {
+	results, err := s.memberRepository.SearchByName(ctx, db, name)
+	if err != nil {
+		return nil, fmt.Errorf("회원 검색 실패: %w", err)
+	}
+	return results, nil
+}
