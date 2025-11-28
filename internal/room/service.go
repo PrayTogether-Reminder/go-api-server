@@ -222,3 +222,12 @@ func (s *RoomService) AddMemberToRoom(ctx context.Context, tx *gorm.DB, member *
 	}
 	return nil
 }
+
+// FetchMemberIDsByRoomID fetches all member IDs in a room
+func (s *RoomService) FetchMemberIDsByRoomID(ctx context.Context, tx *gorm.DB, roomID int64) ([]int64, error) {
+	memberIDs, err := s.memberRoomRepository.FindMemberIDsByRoomID(ctx, tx, roomID)
+	if err != nil {
+		return nil, fmt.Errorf("방 멤버 ID 조회 실패: %w", err)
+	}
+	return memberIDs, nil
+}

@@ -13,6 +13,7 @@ import (
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/invitation"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/meta"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/notification"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/prayer"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/room"
 	"github.com/gin-gonic/gin"
@@ -35,6 +36,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	refreshTokenRepository := auth.NewRefreshTokenRepository()
 	invitationRepository := invitation.NewInvitationRepository()
 	fcmTokenRepository := fcmtoken.NewFcmTokenRepository()
+	notificationRepository := notification.NewNotificationRepository()
 
 	// OTP dependencies
 	otpCache := otp.NewInMemoryCache()
@@ -53,12 +55,13 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	prayerService := prayer.NewPrayerService(prayerRepository)
 	invitationService := invitation.NewInvitationService(invitationRepository)
 	fcmTokenService := fcmtoken.NewFcmTokenService(fcmTokenRepository)
+	notificationService := notification.NewNotificationService(notificationRepository)
 
 	// usecase
 	memberUseCase := member.NewMemberUseCase(db.DB, memberService)
 	authUseCase := auth.NewAuthUseCase(db.DB, memberService, tokenManager, authService, otpService, refreshTokenService)
 	roomUseCase := room.NewRoomUseCase(db.DB, roomService)
-	prayerUseCase := prayer.NewPrayerUseCase(db.DB, prayerService, roomService, memberService)
+	prayerUseCase := prayer.NewPrayerUseCase(db.DB, prayerService, roomService, memberService, notificationService)
 	invitationUseCase := invitation.NewInvitationUseCase(db.DB, invitationService, roomService, memberService)
 	fcmTokenUseCase := fcmtoken.NewFcmTokenUseCase(db.DB, memberService, fcmTokenService)
 
@@ -111,6 +114,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 		prayerV1.GET("/:titleId/contents", prayerHandler.FetchPrayerContents)
 		prayerV1.PUT("/:titleId/contents/:contentId", prayerHandler.UpdatePrayerContent)
 		prayerV1.DELETE("/:titleId/contents/:contentId", prayerHandler.DeletePrayerContent)
+		prayerV1.POST("/:titleId/completion", prayerHandler.CompletePrayer)
 	}
 
 	// Invitation API v1 routes

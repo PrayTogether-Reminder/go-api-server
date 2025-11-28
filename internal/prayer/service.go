@@ -204,3 +204,14 @@ func (s *PrayerService) DeleteContent(ctx context.Context, tx *gorm.DB, contentI
 
 	return nil
 }
+
+// CreateCompletion creates a prayer completion record
+func (s *PrayerService) CreateCompletion(ctx context.Context, tx *gorm.DB, prayerID int64, prayerTitle *model.PrayerTitle) error {
+	completion := model.NewPrayerCompletion(prayerID, prayerTitle)
+
+	if err := s.prayerRepository.CreateCompletion(ctx, tx, completion); err != nil {
+		return fmt.Errorf("기도 완료 기록 생성 실패: prayerID=%d titleID=%d %w", prayerID, prayerTitle.ID, err)
+	}
+
+	return nil
+}

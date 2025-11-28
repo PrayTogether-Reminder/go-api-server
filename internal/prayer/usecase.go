@@ -2,28 +2,38 @@ package prayer
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/database"
 	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/model"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/notification"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/room"
 	"gorm.io/gorm"
 )
 
 type PrayerUseCase struct {
-	db            *gorm.DB
-	prayerService *PrayerService
-	roomService   *room.RoomService
-	memberService member.MemberService
+	db                  *gorm.DB
+	prayerService       *PrayerService
+	roomService         *room.RoomService
+	memberService       member.MemberService
+	notificationService *notification.NotificationService
 }
 
-func NewPrayerUseCase(db *gorm.DB, prayerService *PrayerService, roomService *room.RoomService, memberService *member.MemberService) *PrayerUseCase {
+func NewPrayerUseCase(
+	db *gorm.DB,
+	prayerService *PrayerService,
+	roomService *room.RoomService,
+	memberService *member.MemberService,
+	notificationService *notification.NotificationService,
+) *PrayerUseCase {
 	return &PrayerUseCase{
-		db:            db,
-		prayerService: prayerService,
-		roomService:   roomService,
-		memberService: *memberService,
+		db:                  db,
+		prayerService:       prayerService,
+		roomService:         roomService,
+		memberService:       *memberService,
+		notificationService: notificationService,
 	}
 }
 
@@ -297,5 +307,64 @@ func (u *PrayerUseCase) DeletePrayerContent(
 
 	return &sharedHttp.MessageResponse{
 		Message: "기도 내용을 삭제했습니다.",
+	}, nil
+}
+
+// CompletePrayer handles prayer completion and sends notifications
+func (u *PrayerUseCase) CompletePrayer(
+	ctx context.Context,
+	senderID int64,
+	titleID int64,
+	request *PrayerCompletionCreateRequest,
+) (*sharedHttp.MessageResponse, error) {
+	err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
+		if err := u.validateMemberExistInRoomByTitleId(ctx, tx, senderID, titleID); err != nil {
+			return err
+		}
+
+		prayerTitle, err := u.prayerService.GetTitleById(ctx, tx, titleID)
+		if err != nil {
+			return err
+		}
+
+		if err := u.prayerService.CreateCompletion(ctx, tx, senderID, prayerTitle); err != nil {
+			return err
+		}
+
+		memberIDs, err := u.roomService.FetchMemberIDsByRoomID(ctx, tx, request.RoomID)
+		if err != nil {
+			return fmt.Errorf("방 멤버 ID 조회 실패: %w", err)
+		}
+
+		sender, err := u.memberService.GetByID(ctx, tx, senderID)
+		if err != nil {
+			return err
+		}
+
+		message := fmt.Sprintf("%s님이 %s 기도제목으로 기도했습니다.\n기도로 함께 동참해 주세요!", sender.Name, prayerTitle.Title)
+
+		if err := u.notificationService.CreatePrayerCompletionNotifications(
+			ctx,
+			tx,
+			senderID,
+			memberIDs,
+			message,
+			prayerTitle.ID,
+		); err != nil {
+			return fmt.Errorf("알림 히스토리 생성 실패: %w", err)
+		}
+
+		// Step 8: TODO - Send FCM push notifications (asynchronous)
+		// This will be implemented later with goroutines
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &sharedHttp.MessageResponse{
+		Message: "기도 완료 알림을 전송했습니다.",
 	}, nil
 }

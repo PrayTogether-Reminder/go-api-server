@@ -68,3 +68,8 @@ type TitleIDContentIDParam struct {
 	TitleID   int64 `uri:"titleId" binding:"gt=0"`
 	ContentID int64 `uri:"contentId" binding:"gt=0"`
 }
+
+// PrayerCompletionCreateRequest represents the request body for completing a prayer
+type PrayerCompletionCreateRequest struct {
+	RoomID int64 `json:"roomId" binding:"required,gt=0"`
+}

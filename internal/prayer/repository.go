@@ -156,3 +156,8 @@ func (r *PrayerRepository) DeleteContent(ctx context.Context, db *gorm.DB, conte
 		Where("id = ?", contentID).
 		Delete(&model.PrayerContent{}).Error
 }
+
+// CreateCompletion creates a prayer completion record
+func (r *PrayerRepository) CreateCompletion(ctx context.Context, db *gorm.DB, completion *model.PrayerCompletion) error {
+	return db.WithContext(ctx).Create(completion).Error
+}

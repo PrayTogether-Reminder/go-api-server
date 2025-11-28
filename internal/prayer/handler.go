@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
-	http2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,13 +19,13 @@ func NewPrayerHandler(prayerUseCase *PrayerUseCase) *PrayerHandler {
 }
 
 func (h *PrayerHandler) FetchTitlesByInfiniteScroll(c *gin.Context) {
-	memberID, ok := http2.RequireMemberID(c)
+	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
 
 	var request PrayerTitleInfiniteScrollRequest
-	if !http2.BindQuery(c, &request) {
+	if !sharedHttp.BindQuery(c, &request) {
 		return
 	}
 
@@ -36,11 +36,11 @@ func (h *PrayerHandler) FetchTitlesByInfiniteScroll(c *gin.Context) {
 	response, err := h.prayerUseCase.FetchTitlesByInfiniteScroll(c.Request.Context(), memberID, &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			http2.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		http2.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -48,23 +48,23 @@ func (h *PrayerHandler) FetchTitlesByInfiniteScroll(c *gin.Context) {
 }
 
 func (h *PrayerHandler) CreatePrayerTitle(c *gin.Context) {
-	memberID, ok := http2.RequireMemberID(c)
+	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
 	var request CreatePrayerTitleRequest
-	if !http2.BindJSON(c, &request) {
+	if !sharedHttp.BindJSON(c, &request) {
 		return
 	}
 
 	response, err := h.prayerUseCase.CreatePrayerTitle(c.Request.Context(), memberID, &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			http2.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		http2.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -72,7 +72,7 @@ func (h *PrayerHandler) CreatePrayerTitle(c *gin.Context) {
 }
 
 func (h *PrayerHandler) CreatePrayerContent(c *gin.Context) {
-	writerID, ok := http2.RequireMemberID(c)
+	writerID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
@@ -80,23 +80,23 @@ func (h *PrayerHandler) CreatePrayerContent(c *gin.Context) {
 	var uriParam struct {
 		TitleID int64 `uri:"titleId" binding:"gt=0"`
 	}
-	if !http2.BindURI(c, &uriParam) {
+	if !sharedHttp.BindURI(c, &uriParam) {
 		return
 	}
 
 	var request CreatePrayerContentRequest
-	if !http2.BindJSON(c, &request) {
+	if !sharedHttp.BindJSON(c, &request) {
 		return
 	}
 
 	response, err := h.prayerUseCase.CreatePrayerContent(c.Request.Context(), writerID, uriParam.TitleID, &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			http2.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		http2.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -104,24 +104,24 @@ func (h *PrayerHandler) CreatePrayerContent(c *gin.Context) {
 }
 
 func (h *PrayerHandler) FetchPrayerContents(c *gin.Context) {
-	memberID, ok := http2.RequireMemberID(c)
+	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
 
 	var path TitleIDParam
-	if !http2.BindURI(c, &path) {
+	if !sharedHttp.BindURI(c, &path) {
 		return
 	}
 
 	response, err := h.prayerUseCase.FetchPrayerContents(c.Request.Context(), memberID, path.TitleID)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			http2.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		http2.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -129,29 +129,29 @@ func (h *PrayerHandler) FetchPrayerContents(c *gin.Context) {
 }
 
 func (h *PrayerHandler) UpdatePrayerTitle(c *gin.Context) {
-	memberID, ok := http2.RequireMemberID(c)
+	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
 
 	var path TitleIDParam
-	if !http2.BindURI(c, &path) {
+	if !sharedHttp.BindURI(c, &path) {
 		return
 	}
 
 	var request UpdatePrayerTitleRequest
-	if !http2.BindJSON(c, &request) {
+	if !sharedHttp.BindJSON(c, &request) {
 		return
 	}
 
 	response, err := h.prayerUseCase.UpdatePrayerTitle(c.Request.Context(), memberID, path.TitleID, &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			http2.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		http2.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -159,29 +159,29 @@ func (h *PrayerHandler) UpdatePrayerTitle(c *gin.Context) {
 }
 
 func (h *PrayerHandler) UpdatePrayerContent(c *gin.Context) {
-	memberID, ok := http2.RequireMemberID(c)
+	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
 
 	var path TitleIDContentIDParam
-	if !http2.BindURI(c, &path) {
+	if !sharedHttp.BindURI(c, &path) {
 		return
 	}
 
 	var request UpdatePrayerContentRequest
-	if !http2.BindJSON(c, &request) {
+	if !sharedHttp.BindJSON(c, &request) {
 		return
 	}
 
 	response, err := h.prayerUseCase.UpdatePrayerContent(c.Request.Context(), memberID, path.TitleID, path.ContentID, &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			http2.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		http2.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -189,24 +189,24 @@ func (h *PrayerHandler) UpdatePrayerContent(c *gin.Context) {
 }
 
 func (h *PrayerHandler) DeletePrayerTitle(c *gin.Context) {
-	memberID, ok := http2.RequireMemberID(c)
+	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
 
 	var path TitleIDParam
-	if !http2.BindURI(c, &path) {
+	if !sharedHttp.BindURI(c, &path) {
 		return
 	}
 
 	response, err := h.prayerUseCase.DeletePrayerTitle(c.Request.Context(), memberID, path.TitleID)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			http2.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		http2.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -214,24 +214,55 @@ func (h *PrayerHandler) DeletePrayerTitle(c *gin.Context) {
 }
 
 func (h *PrayerHandler) DeletePrayerContent(c *gin.Context) {
-	memberID, ok := http2.RequireMemberID(c)
+	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
 
 	var path TitleIDContentIDParam
-	if !http2.BindURI(c, &path) {
+	if !sharedHttp.BindURI(c, &path) {
 		return
 	}
 
 	response, err := h.prayerUseCase.DeletePrayerContent(c.Request.Context(), memberID, path.TitleID, path.ContentID)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			http2.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		http2.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// CompletePrayer handles prayer completion request
+func (h *PrayerHandler) CompletePrayer(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	var path TitleIDParam
+	if !sharedHttp.BindURI(c, &path) {
+		return
+	}
+
+	var request PrayerCompletionCreateRequest
+	if !sharedHttp.BindJSON(c, &request) {
+		return
+	}
+
+	response, err := h.prayerUseCase.CompletePrayer(c.Request.Context(), memberID, path.TitleID, &request)
+	if err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
