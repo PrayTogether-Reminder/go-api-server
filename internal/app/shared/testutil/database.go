@@ -31,6 +31,7 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 		&model.RefreshToken{},
 		&model.PrayerTitle{},
 		&model.PrayerContent{},
+		&model.FcmToken{},
 		// Add other models here as needed
 	)
 	if err != nil {
