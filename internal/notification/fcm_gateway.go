@@ -25,8 +25,8 @@ type FCMGateway struct {
 
 // NewFCMGateway creates a new FCM gateway instance
 func NewFCMGateway(cfg *config.Config, db *gorm.DB, fcmTokenRepo *fcm_token.FcmTokenRepository) (*FCMGateway, error) {
+	slog.Info("FCM 활성화 상태", "enabled", cfg.FCM.Enabled)
 	if !cfg.FCM.Enabled {
-		slog.Info("FCM 활성화 상태", "enabled", cfg.FCM.Enabled)
 		return &FCMGateway{
 			client:       nil,
 			db:           db,

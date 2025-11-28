@@ -7,7 +7,7 @@ import (
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/database"
 	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
-	logger2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/logger"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/logger"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/token"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth/otp"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
@@ -74,7 +74,7 @@ func (u *AuthUseCase) Login(ctx context.Context, request *LoginRequest) (*LoginR
 }
 
 func (u *AuthUseCase) Signup(ctx context.Context, request *SignupRequest) error {
-	log := logger2.FromContext(ctx)
+	log := logger.FromContext(ctx)
 
 	return database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
 		hashedPassword, err := u.authService.HashPassword(request.Password)
@@ -87,13 +87,13 @@ func (u *AuthUseCase) Signup(ctx context.Context, request *SignupRequest) error 
 			return err
 		}
 
-		log.Info("Member created successfully", "email", logger2.MaskEmail(request.Email))
+		log.Info("Member created successfully", "email", logger.MaskEmail(request.Email))
 		return nil
 	})
 }
 
 func (u *AuthUseCase) RequestEmailOTP(ctx context.Context, request *EmailOtpRequest) (*sharedHttp.MessageResponse, error) {
-	log := logger2.FromContext(ctx)
+	log := logger.FromContext(ctx)
 
 	exists, err := u.memberService.ExistsByEmail(ctx, u.db, request.Email)
 	if err != nil {
@@ -105,34 +105,34 @@ func (u *AuthUseCase) RequestEmailOTP(ctx context.Context, request *EmailOtpRequ
 	}
 
 	if err := u.otpService.SendToEmail(ctx, request.Email); err != nil {
-		log.Error("OTP 발송 실패", "email", logger2.MaskEmail(request.Email), "error", err)
+		log.Error("OTP 발송 실패", "email", logger.MaskEmail(request.Email), "error", err)
 		return nil, err
 	}
 
-	log.Info("OTP 발송 성공", "email", logger2.MaskEmail(request.Email))
+	log.Info("OTP 발송 성공", "email", logger.MaskEmail(request.Email))
 	return &sharedHttp.MessageResponse{Message: "인증 번호를 요청했습니다."}, nil
 }
 
 func (u *AuthUseCase) VerifyEmailOTP(ctx context.Context, request *VerifyOtpRequest) (*sharedHttp.MessageResponse, error) {
-	log := logger2.FromContext(ctx)
+	log := logger.FromContext(ctx)
 
 	isValid, err := u.otpService.VerifyOTP(ctx, request.Email, request.Otp)
 	if err != nil {
-		log.Error("OTP 검증 실패", "email", logger2.MaskEmail(request.Email), "error", err)
+		log.Error("OTP 검증 실패", "email", logger.MaskEmail(request.Email), "error", err)
 		return nil, err
 	}
 
 	if !isValid {
-		log.Warn("OTP 불일치", "email", logger2.MaskEmail(request.Email))
+		log.Warn("OTP 불일치", "email", logger.MaskEmail(request.Email))
 		return &sharedHttp.MessageResponse{Message: "인증 번호가 일치하지 않습니다."}, nil
 	}
 
-	log.Info("OTP 검증 성공", "email", logger2.MaskEmail(request.Email))
+	log.Info("OTP 검증 성공", "email", logger.MaskEmail(request.Email))
 	return &sharedHttp.MessageResponse{Message: "인증에 성공했습니다."}, nil
 }
 
 func (u *AuthUseCase) Withdraw(ctx context.Context, memberID int64) (*sharedHttp.MessageResponse, error) {
-	log := logger2.FromContext(ctx)
+	log := logger.FromContext(ctx)
 
 	err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
 		if err := u.memberService.DeleteMember(ctx, tx, memberID); err != nil {
@@ -152,7 +152,7 @@ func (u *AuthUseCase) Withdraw(ctx context.Context, memberID int64) (*sharedHttp
 }
 
 func (u *AuthUseCase) Logout(ctx context.Context, memberID int64) error {
-	log := logger2.FromContext(ctx)
+	log := logger.FromContext(ctx)
 	log.Info("회원 로그아웃 시도", "memberID", memberID)
 
 	if err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
