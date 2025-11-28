@@ -24,6 +24,8 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	metaHandler := meta.NewHandler(cfg, db)
 	router.GET("/health", metaHandler.Health)
 	router.GET("/api/v1/app-versions", metaHandler.AppVersions)
+	router.GET("/legal-document", metaHandler.LegalDocument)
+	router.Static("/static", "./templates/assets")
 
 	// repository
 	memberRepo := member.NewMemberRepository()

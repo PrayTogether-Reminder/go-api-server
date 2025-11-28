@@ -2,6 +2,7 @@ package meta
 
 import (
 	"net/http"
+	"path/filepath"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/database"
@@ -36,4 +37,9 @@ func (h *Handler) AppVersions(c *gin.Context) {
 		"forceUpdateAppVersion": h.cfg.AppVersion.ForceUpdateAppVersion,
 		"maintenanceMode":       h.cfg.AppVersion.MaintenanceMode,
 	})
+}
+
+func (h *Handler) LegalDocument(c *gin.Context) {
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	c.File(filepath.Join("templates", "legal-document.html"))
 }
