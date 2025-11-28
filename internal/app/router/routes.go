@@ -23,6 +23,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	// Meta handler (health check, app version, legal documents)
 	metaHandler := meta.NewHandler(cfg, db)
 	router.GET("/health", metaHandler.Health)
+	router.GET("/api/v1/app-versions", metaHandler.AppVersions)
 
 	// repository
 	memberRepo := member.NewMemberRepository()

@@ -74,3 +74,12 @@ func (h *Handler) Health(c *gin.Context) {
 		},
 	})
 }
+
+// AppVersions exposes mobile app version requirements and maintenance flags
+func (h *Handler) AppVersions(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"minimumAppVersion":     h.cfg.AppVersion.MinimumAppVersion,
+		"forceUpdateAppVersion": h.cfg.AppVersion.ForceUpdateAppVersion,
+		"maintenanceMode":       h.cfg.AppVersion.MaintenanceMode,
+	})
+}

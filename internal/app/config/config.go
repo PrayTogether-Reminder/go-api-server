@@ -13,12 +13,13 @@ import (
 )
 
 type Config struct {
-	App      AppConfig
-	Database DatabaseConfig
-	JWT      JWTConfig
-	CORS     CORSConfig
-	Server   ServerConfig
-	SMTP     SMTPConfig
+	App        AppConfig
+	Database   DatabaseConfig
+	JWT        JWTConfig
+	CORS       CORSConfig
+	Server     ServerConfig
+	SMTP       SMTPConfig
+	AppVersion AppVersionConfig
 }
 
 type AppConfig struct {
@@ -69,6 +70,12 @@ type SMTPConfig struct {
 	From     string
 }
 
+type AppVersionConfig struct {
+	MinimumAppVersion     string
+	ForceUpdateAppVersion string
+	MaintenanceMode       bool
+}
+
 func Load(env string) (*Config, error) {
 	if err := loadEnvFile(env); err != nil {
 		return nil, fmt.Errorf("환경 변수 로드 실패: %w", err)
@@ -116,6 +123,11 @@ func Load(env string) (*Config, error) {
 			Username: getEnv("SMTP_USERNAME", ""),
 			Password: getEnv("SMTP_PASSWORD", ""),
 			From:     getEnv("SMTP_FROM", ""),
+		},
+		AppVersion: AppVersionConfig{
+			MinimumAppVersion:     getEnv("MINIMUM_APP_VERSION", ""),
+			ForceUpdateAppVersion: getEnv("FORCE_UPDATE_APP_VERSION", ""),
+			MaintenanceMode:       getEnvAsBool("MAINTENANCE_MODE", false),
 		},
 	}
 
