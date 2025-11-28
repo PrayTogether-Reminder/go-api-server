@@ -3,7 +3,8 @@ package prayer_test
 import (
 	"testing"
 
-	testutil2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/testutil"
+	"github.com/changhyeonkim/pray-together/go-api-server/internal/notification"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/prayer"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/room"
 	"gorm.io/gorm"
@@ -15,25 +16,33 @@ func setupTestEnvironment(t *testing.T) (*prayer.PrayerHandler, *gorm.DB, int64)
 	t.Helper()
 
 	// Setup test database
-	db := testutil2.SetupTestDB(t)
+	db := testutil.SetupTestDB(t)
 	t.Cleanup(func() {
-		testutil2.CleanupTestDB(t, db)
+		testutil.CleanupTestDB(t, db)
 	})
 
 	// Create a test member for authenticated requests
-	testMember := testutil2.CreateTestMember(t, db)
+	testMember := testutil.CreateTestMember(t, db)
 
 	// Setup room dependencies (needed for validation)
 	roomRepo := room.NewRoomRepository()
 	memberRoomRepo := room.NewMemberRoomRepository()
-	memberRepo := testutil2.NewMemberRepository()
-	memberService := testutil2.NewMemberService(memberRepo)
+	memberRepo := testutil.NewMemberRepository()
+	memberService := testutil.NewMemberService(memberRepo)
 	roomService := room.NewRoomService(roomRepo, memberRoomRepo, memberService)
 
 	// Setup prayer dependencies
 	prayerRepo := prayer.NewPrayerRepository()
 	prayerService := prayer.NewPrayerService(prayerRepo)
-	prayerUseCase := prayer.NewPrayerUseCase(db, prayerService, roomService, memberService)
+
+	// Setup notification dependencies
+	notificationRepo := notification.NewNotificationRepository()
+	notificationService := notification.NewNotificationService(notificationRepo)
+
+	// Setup FCM Gateway (disabled for testing)
+	fcmGateway := &notification.FCMGateway{} // nil client, disabled for tests
+
+	prayerUseCase := prayer.NewPrayerUseCase(db, prayerService, roomService, memberService, notificationService, fcmGateway)
 	prayerHandler := prayer.NewPrayerHandler(prayerUseCase)
 
 	return prayerHandler, db, int64(testMember.ID)
