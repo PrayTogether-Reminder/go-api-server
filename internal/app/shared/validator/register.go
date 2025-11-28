@@ -25,7 +25,6 @@ func RegisterAll() error {
 		return fmt.Errorf("validator 엔진 가져오기 실패: %w", err)
 	}
 
-	// Register common validators
 	if err := v.RegisterValidation("phone", ValidatePhone); err != nil {
 		return fmt.Errorf("phone validator 등록 실패: %w", err)
 	}

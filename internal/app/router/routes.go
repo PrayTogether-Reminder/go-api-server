@@ -9,6 +9,7 @@ import (
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/token"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/auth/otp"
+	fcmtoken "github.com/changhyeonkim/pray-together/go-api-server/internal/fcm_token"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/invitation"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/member"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/meta"
@@ -30,6 +31,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	prayerRepository := prayer.NewPrayerRepository()
 	refreshTokenRepository := auth.NewRefreshTokenRepository()
 	invitationRepository := invitation.NewInvitationRepository()
+	fcmTokenRepository := fcmtoken.NewFcmTokenRepository()
 
 	// OTP dependencies
 	otpCache := otp.NewInMemoryCache()
@@ -47,6 +49,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	roomService := room.NewRoomService(roomRepository, memberRoomRepository, memberService)
 	prayerService := prayer.NewPrayerService(prayerRepository)
 	invitationService := invitation.NewInvitationService(invitationRepository)
+	fcmTokenService := fcmtoken.NewFcmTokenService(fcmTokenRepository)
 
 	// usecase
 	memberUseCase := member.NewMemberUseCase(db.DB, memberService)
@@ -54,6 +57,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	roomUseCase := room.NewRoomUseCase(db.DB, roomService)
 	prayerUseCase := prayer.NewPrayerUseCase(db.DB, prayerService, roomService, memberService)
 	invitationUseCase := invitation.NewInvitationUseCase(db.DB, invitationService, roomService, memberService)
+	fcmTokenUseCase := fcmtoken.NewFcmTokenUseCase(db.DB, memberService, fcmTokenService)
 
 	// handler
 	authHandler := auth.NewAuthHandler(authUseCase)
@@ -61,6 +65,7 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	roomHandler := room.NewRoomHandler(roomUseCase)
 	prayerHandler := prayer.NewPrayerHandler(prayerUseCase)
 	invitationHandler := invitation.NewInvitationHandler(invitationUseCase)
+	fcmTokenHandler := fcmtoken.NewHandler(fcmTokenUseCase)
 
 	// API v1 routes
 	authV1 := router.Group("/api/v1/auth")
@@ -118,5 +123,11 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	invitationV2.Use(middleware.JWT(cfg))
 	{
 		invitationV2.POST("", invitationHandler.InviteMembers)
+	}
+
+	fcmTokenV1 := router.Group("/api/v1/fcm-token")
+	fcmTokenV1.Use(middleware.JWT(cfg))
+	{
+		fcmTokenV1.POST("", fcmTokenHandler.RegisterToken)
 	}
 }
