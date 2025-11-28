@@ -20,6 +20,7 @@ type Config struct {
 	Server     ServerConfig
 	SMTP       SMTPConfig
 	AppVersion AppVersionConfig
+	FCM        FCMConfig
 }
 
 type AppConfig struct {
@@ -76,6 +77,11 @@ type AppVersionConfig struct {
 	MaintenanceMode       bool
 }
 
+type FCMConfig struct {
+	CredentialsPath string
+	Enabled         bool
+}
+
 func Load(env string) (*Config, error) {
 	if err := loadEnvFile(env); err != nil {
 		return nil, fmt.Errorf("환경 변수 로드 실패: %w", err)
@@ -128,6 +134,10 @@ func Load(env string) (*Config, error) {
 			MinimumAppVersion:     getEnv("MINIMUM_APP_VERSION", ""),
 			ForceUpdateAppVersion: getEnv("FORCE_UPDATE_APP_VERSION", ""),
 			MaintenanceMode:       getEnvAsBool("MAINTENANCE_MODE", false),
+		},
+		FCM: FCMConfig{
+			CredentialsPath: getEnv("FCM_CREDENTIALS_PATH", ""),
+			Enabled:         getEnvAsBool("FCM_ENABLED", false),
 		},
 	}
 

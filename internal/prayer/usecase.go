@@ -19,6 +19,7 @@ type PrayerUseCase struct {
 	roomService         *room.RoomService
 	memberService       member.MemberService
 	notificationService *notification.NotificationService
+	fcmGateway          *notification.FCMGateway
 }
 
 func NewPrayerUseCase(
@@ -27,6 +28,7 @@ func NewPrayerUseCase(
 	roomService *room.RoomService,
 	memberService *member.MemberService,
 	notificationService *notification.NotificationService,
+	fcmGateway *notification.FCMGateway,
 ) *PrayerUseCase {
 	return &PrayerUseCase{
 		db:                  db,
@@ -34,6 +36,7 @@ func NewPrayerUseCase(
 		roomService:         roomService,
 		memberService:       *memberService,
 		notificationService: notificationService,
+		fcmGateway:          fcmGateway,
 	}
 }
 
@@ -317,12 +320,17 @@ func (u *PrayerUseCase) CompletePrayer(
 	titleID int64,
 	request *PrayerCompletionCreateRequest,
 ) (*sharedHttp.MessageResponse, error) {
+	var sender *model.Member
+	var prayerTitle *model.PrayerTitle
+	var memberIDs []int64
+
 	err := database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
 		if err := u.validateMemberExistInRoomByTitleId(ctx, tx, senderID, titleID); err != nil {
 			return err
 		}
 
-		prayerTitle, err := u.prayerService.GetTitleById(ctx, tx, titleID)
+		var err error
+		prayerTitle, err = u.prayerService.GetTitleById(ctx, tx, titleID)
 		if err != nil {
 			return err
 		}
@@ -331,12 +339,12 @@ func (u *PrayerUseCase) CompletePrayer(
 			return err
 		}
 
-		memberIDs, err := u.roomService.FetchMemberIDsByRoomID(ctx, tx, request.RoomID)
+		memberIDs, err = u.roomService.FetchMemberIDsByRoomID(ctx, tx, request.RoomID)
 		if err != nil {
 			return fmt.Errorf("방 멤버 ID 조회 실패: %w", err)
 		}
 
-		sender, err := u.memberService.GetByID(ctx, tx, senderID)
+		sender, err = u.memberService.GetByID(ctx, tx, senderID)
 		if err != nil {
 			return err
 		}
@@ -354,14 +362,26 @@ func (u *PrayerUseCase) CompletePrayer(
 			return fmt.Errorf("알림 히스토리 생성 실패: %w", err)
 		}
 
-		// Step 8: TODO - Send FCM push notifications (asynchronous)
-		// This will be implemented later with goroutines
-
 		return nil
 	})
 
 	if err != nil {
 		return nil, err
+	}
+
+	// Send FCM push notifications (asynchronous - outside transaction)
+	if sender != nil && prayerTitle != nil && len(memberIDs) > 0 {
+		notificationTitle := "기도 알림"
+		notificationBody := fmt.Sprintf("%s님이 %s 기도제목으로 기도했습니다.\n기도로 함께 동참해 주세요!", sender.Name, prayerTitle.Title)
+		u.fcmGateway.SendPrayerCompletionNotification(
+			ctx,
+			memberIDs,
+			request.RoomID,
+			prayerTitle.ID,
+			prayerTitle.Title,
+			notificationTitle,
+			notificationBody,
+		)
 	}
 
 	return &sharedHttp.MessageResponse{

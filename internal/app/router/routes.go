@@ -1,6 +1,7 @@
 package router
 
 import (
+	"log"
 	"time"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
@@ -57,11 +58,17 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	fcmTokenService := fcmtoken.NewFcmTokenService(fcmTokenRepository)
 	notificationService := notification.NewNotificationService(notificationRepository)
 
+	// FCM Gateway
+	fcmGateway, err := notification.NewFCMGateway(cfg, db.DB, fcmTokenRepository)
+	if err != nil {
+		log.Fatalf("FCM Gateway 초기화 실패: %v", err)
+	}
+
 	// usecase
 	memberUseCase := member.NewMemberUseCase(db.DB, memberService)
 	authUseCase := auth.NewAuthUseCase(db.DB, memberService, tokenManager, authService, otpService, refreshTokenService)
 	roomUseCase := room.NewRoomUseCase(db.DB, roomService)
-	prayerUseCase := prayer.NewPrayerUseCase(db.DB, prayerService, roomService, memberService, notificationService)
+	prayerUseCase := prayer.NewPrayerUseCase(db.DB, prayerService, roomService, memberService, notificationService, fcmGateway)
 	invitationUseCase := invitation.NewInvitationUseCase(db.DB, invitationService, roomService, memberService)
 	fcmTokenUseCase := fcmtoken.NewFcmTokenUseCase(db.DB, memberService, fcmTokenService)
 

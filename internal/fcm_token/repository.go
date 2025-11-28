@@ -33,3 +33,20 @@ func (r *FcmTokenRepository) DeleteByTokenAndMemberID(ctx context.Context, db *g
 		Where("member_id = ? AND token = ?", memberID, token).
 		Delete(&model.FcmToken{}).Error
 }
+
+// FindTokensByMemberIDs retrieves all FCM tokens for the given member IDs.
+func (r *FcmTokenRepository) FindTokensByMemberIDs(ctx context.Context, db *gorm.DB, memberIDs []int64) ([]string, error) {
+	var tokens []string
+	err := db.WithContext(ctx).
+		Model(&model.FcmToken{}).
+		Where("member_id IN ?", memberIDs).
+		Pluck("token", &tokens).Error
+	return tokens, err
+}
+
+// DeleteByToken removes a token by its value (used when FCM reports token as invalid).
+func (r *FcmTokenRepository) DeleteByToken(ctx context.Context, db *gorm.DB, token string) error {
+	return db.WithContext(ctx).
+		Where("token = ?", token).
+		Delete(&model.FcmToken{}).Error
+}
