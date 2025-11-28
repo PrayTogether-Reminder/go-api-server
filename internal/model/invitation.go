@@ -1,12 +1,33 @@
 package model
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"time"
 )
 
 // InvitationStatus represents the status of an invitation
 type InvitationStatus string
+
+// Value implements driver.Valuer so InvitationStatus can be stored via database/sql.
+func (s InvitationStatus) Value() (driver.Value, error) {
+	return string(s), nil
+}
+
+// Scan implements sql.Scanner to read InvitationStatus from DB rows.
+func (s *InvitationStatus) Scan(value interface{}) error {
+	switch v := value.(type) {
+	case string:
+		*s = InvitationStatus(v)
+	case []byte:
+		*s = InvitationStatus(string(v))
+	case nil:
+		*s = ""
+	default:
+		return fmt.Errorf("unsupported InvitationStatus scan type: %T", value)
+	}
+	return nil
+}
 
 const (
 	InvitationPending  InvitationStatus = "PENDING"

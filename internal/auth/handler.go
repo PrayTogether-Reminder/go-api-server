@@ -48,7 +48,7 @@ func (a *AuthHandler) Signup(c *gin.Context) {
 		return
 	}
 
-	err := a.authUseCase.Signup(c.Request.Context(), &request)
+	response, err := a.authUseCase.Signup(c.Request.Context(), &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
 			sharedHttp.RespondError(c, err, resp)
@@ -58,7 +58,7 @@ func (a *AuthHandler) Signup(c *gin.Context) {
 		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{})
+	c.JSON(http.StatusCreated, response)
 }
 
 func (a *AuthHandler) RequestEmailOTP(c *gin.Context) {

@@ -16,7 +16,7 @@ type RoomInfo struct {
 	Description    string    `json:"description"`    // 방 설명
 	JoinedTime     time.Time `json:"joinedTime"`     // 가입 시간
 	IsNotification bool      `json:"isNotification"` // 알림 여부
-	MemberCount    int64     `json:"memberCount"`    // 멤버 수
+	MemberCnt      int64     `json:"memberCnt"`      // 멤버 수
 }
 
 // ===== RoomRepository =====
@@ -39,7 +39,7 @@ func (r *RoomRepository) FindRoomInfosByMemberIDInitial(ctx context.Context, db 
 			room.description,
 			mr.created_time as joined_time,
 			mr.is_notification,
-			0 as member_count
+			0 as member_cnt
 		`).
 		Joins("JOIN room ON mr.room_id = room.id").
 		Where("mr.member_id = ?", memberID).
@@ -66,7 +66,7 @@ func (r *RoomRepository) FindRoomInfosByMemberIDAfter(ctx context.Context, db *g
 			room.description,
 			mr.created_time as joined_time,
 			mr.is_notification,
-			0 as member_count
+			0 as member_cnt
 		`).
 		Joins("JOIN room ON mr.room_id = room.id").
 		Where("mr.member_id = ? AND mr.created_time < ?", memberID, after).

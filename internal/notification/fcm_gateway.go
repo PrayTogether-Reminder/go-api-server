@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/config"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/logger"
 	"github.com/changhyeonkim/pray-together/go-api-server/internal/fcm_token"
 	"gorm.io/gorm"
@@ -75,11 +77,20 @@ func (g *FCMGateway) SendPrayerCompletionNotification(
 		return
 	}
 
-	// Run asynchronously using goroutine
-	go func() {
-		log := logger.FromContext(ctx)
+	// create a detached context so DB/FCM calls keep request metadata but aren't canceled immediately
+	notificationCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	notificationCtx = logger.WithLogger(notificationCtx, logger.FromContext(ctx))
+	if memberID := ctx.Value(sharedHttp.ContextKey()); memberID != nil {
+		notificationCtx = context.WithValue(notificationCtx, sharedHttp.ContextKey(), memberID)
+	}
 
-		tokens, err := g.fcmTokenRepo.FindTokensByMemberIDs(ctx, g.db, recipientIDs)
+	// Run asynchronously using goroutine
+	go func(asyncCtx context.Context) {
+		defer cancel()
+
+		log := logger.FromContext(asyncCtx)
+
+		tokens, err := g.fcmTokenRepo.FindTokensByMemberIDs(asyncCtx, g.db, recipientIDs)
 		if err != nil {
 			log.Error("FCM 토큰 조회 실패", "error", err)
 			return
@@ -105,7 +116,7 @@ func (g *FCMGateway) SendPrayerCompletionNotification(
 			Tokens: tokens,
 		}
 
-		response, err := g.client.SendEachForMulticast(ctx, message)
+		response, err := g.client.SendEachForMulticast(asyncCtx, message)
 		if err != nil {
 			log.Error("FCM 메시지 전송 실패", "error", err)
 			return
@@ -118,9 +129,9 @@ func (g *FCMGateway) SendPrayerCompletionNotification(
 
 		// Handle failed tokens (delete invalid tokens)
 		if response.FailureCount > 0 {
-			g.handleFailedTokens(ctx, tokens, response)
+			g.handleFailedTokens(asyncCtx, tokens, response)
 		}
-	}()
+	}(notificationCtx)
 }
 
 // handleFailedTokens removes invalid FCM tokens from database

@@ -47,6 +47,7 @@ func (r *InvitationRepository) FindByInviteeIDAndID(ctx context.Context, db *gor
 // FindInfosByInviteeIDAndStatus retrieves invitation infos by invitee ID and status
 func (r *InvitationRepository) FindInfosByInviteeIDAndStatus(ctx context.Context, db *gorm.DB, inviteeID int64, status model.InvitationStatus) ([]InvitationInfo, error) {
 	var results []InvitationInfo
+	statusValue := string(status)
 
 	err := db.WithContext(ctx).
 		Table("invitation i").
@@ -58,7 +59,7 @@ func (r *InvitationRepository) FindInfosByInviteeIDAndStatus(ctx context.Context
 			i.created_time
 		`).
 		Joins("JOIN room r ON i.room_id = r.id").
-		Where("i.invitee_id = ? AND i.status = ?", inviteeID, status).
+		Where("i.invitee_id = ? AND i.status = ?", inviteeID, statusValue).
 		Order("i.created_time DESC").
 		Scan(&results).Error
 
@@ -74,10 +75,11 @@ func (r *InvitationRepository) FindByRoomIDAndStatusAndInviteeIDs(ctx context.Co
 	if len(inviteeIDs) == 0 {
 		return []*model.Invitation{}, nil
 	}
+	statusValue := string(status)
 
 	var invitations []*model.Invitation
 	err := db.WithContext(ctx).
-		Where("room_id = ? AND status = ? AND invitee_id IN ?", roomID, status, inviteeIDs).
+		Where("room_id = ? AND status = ? AND invitee_id IN ?", roomID, statusValue, inviteeIDs).
 		Find(&invitations).Error
 
 	if err != nil {

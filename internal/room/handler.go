@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	sharedError "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/error"
-	http2 "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
+	sharedHttp "github.com/changhyeonkim/pray-together/go-api-server/internal/app/shared/http"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,7 +22,7 @@ func NewRoomHandler(roomUseCase *RoomUseCase) *RoomHandler {
 
 // FetchRoomsByInfiniteScroll handles GET /api/v1/rooms
 func (h *RoomHandler) FetchRoomsByInfiniteScroll(c *gin.Context) {
-	memberID, ok := http2.RequireMemberID(c)
+	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
@@ -34,18 +34,18 @@ func (h *RoomHandler) FetchRoomsByInfiniteScroll(c *gin.Context) {
 	request.After = c.DefaultQuery("after", DefaultAfter)
 	request.Dir = c.DefaultQuery("dir", DefaultDir)
 
-	if !http2.BindQuery(c, &request) {
+	if !sharedHttp.BindQuery(c, &request) {
 		return
 	}
 
 	response, err := h.roomUseCase.FetchInfiniteScroll(c.Request.Context(), memberID, &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			http2.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		http2.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -54,24 +54,24 @@ func (h *RoomHandler) FetchRoomsByInfiniteScroll(c *gin.Context) {
 
 // CreateRoom handles POST /api/v1/rooms
 func (h *RoomHandler) CreateRoom(c *gin.Context) {
-	memberID, ok := http2.RequireMemberID(c)
+	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
 
 	var request CreateRoomRequest
-	if !http2.BindJSON(c, &request) {
+	if !sharedHttp.BindJSON(c, &request) {
 		return
 	}
 
 	response, err := h.roomUseCase.CreateRoom(c.Request.Context(), memberID, &request)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			http2.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		http2.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -80,24 +80,24 @@ func (h *RoomHandler) CreateRoom(c *gin.Context) {
 
 // DeleteMemberRoom handles DELETE /api/v1/rooms/:roomId
 func (h *RoomHandler) DeleteMemberRoom(c *gin.Context) {
-	memberID, ok := http2.RequireMemberID(c)
+	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
 
 	var request ExitRoomRequest
-	if !http2.BindURI(c, &request) {
+	if !sharedHttp.BindURI(c, &request) {
 		return
 	}
 
 	response, err := h.roomUseCase.ExitRoom(c.Request.Context(), memberID, request.RoomID)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			http2.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		http2.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 
@@ -105,24 +105,24 @@ func (h *RoomHandler) DeleteMemberRoom(c *gin.Context) {
 }
 
 func (h *RoomHandler) FetchRoomMembers(c *gin.Context) {
-	memberID, ok := http2.RequireMemberID(c)
+	memberID, ok := sharedHttp.RequireMemberID(c)
 	if !ok {
 		return
 	}
 
 	var request FetchRoomMemberRequest
-	if !http2.BindURI(c, &request) {
+	if !sharedHttp.BindURI(c, &request) {
 		return
 	}
 
 	response, err := h.roomUseCase.FetchMembersInRoom(c.Request.Context(), memberID, request.RoomID)
 	if err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
-			http2.RespondError(c, err, resp)
+			sharedHttp.RespondError(c, err, resp)
 			return
 		}
 
-		http2.RespondError(c, err, sharedError.InternalServerError)
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
 		return
 	}
 

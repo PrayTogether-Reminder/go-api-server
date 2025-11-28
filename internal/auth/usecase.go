@@ -73,10 +73,9 @@ func (u *AuthUseCase) Login(ctx context.Context, request *LoginRequest) (*LoginR
 	}, nil
 }
 
-func (u *AuthUseCase) Signup(ctx context.Context, request *SignupRequest) error {
+func (u *AuthUseCase) Signup(ctx context.Context, request *SignupRequest) (*sharedHttp.MessageResponse, error) {
 	log := logger.FromContext(ctx)
-
-	return database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
+	database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
 		hashedPassword, err := u.authService.HashPassword(request.Password)
 		if err != nil {
 			return err
@@ -90,6 +89,9 @@ func (u *AuthUseCase) Signup(ctx context.Context, request *SignupRequest) error 
 		log.Info("Member created successfully", "email", logger.MaskEmail(request.Email))
 		return nil
 	})
+	return &sharedHttp.MessageResponse{
+		Message: "회원가입을 완료했습니다.",
+	}, nil
 }
 
 func (u *AuthUseCase) RequestEmailOTP(ctx context.Context, request *EmailOtpRequest) (*sharedHttp.MessageResponse, error) {

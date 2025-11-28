@@ -62,7 +62,7 @@ func (s *RoomService) GetInfiniteScroll(ctx context.Context, tx *gorm.DB, member
 
 	for i := range roomInfos {
 		if count, exists := countMap[roomInfos[i].ID]; exists {
-			roomInfos[i].MemberCount = count
+			roomInfos[i].MemberCnt = count
 		}
 	}
 

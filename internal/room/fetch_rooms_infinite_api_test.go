@@ -50,7 +50,7 @@ func TestFetchRoomsInfiniteScroll_Success_FirstPage(t *testing.T) {
 	for _, rm := range response.Rooms {
 		assert.NotEmpty(t, rm.ID)
 		assert.NotEmpty(t, rm.Name)
-		assert.GreaterOrEqual(t, rm.MemberCount, int64(1), "Each room should have at least 1 member")
+		assert.GreaterOrEqual(t, rm.MemberCnt, int64(1), "Each room should have at least 1 member")
 	}
 }
 
