@@ -3,6 +3,7 @@ package validator
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
@@ -28,7 +29,10 @@ func RegisterAll() error {
 	if err := v.RegisterValidation("phone", ValidatePhone); err != nil {
 		return fmt.Errorf("phone validator 등록 실패: %w", err)
 	}
+	if err := v.RegisterValidation("notblank", ValidateNotBlank); err != nil {
+		return fmt.Errorf("notblank validator 등록 실패: %w", err)
+	}
 
-	slog.Info("공통 Validator 등록 완료", "validators", "phone")
+	slog.Info("공통 Validator 등록 완료", "validators", strings.Join([]string{"phone", "notblank"}, ","))
 	return nil
 }

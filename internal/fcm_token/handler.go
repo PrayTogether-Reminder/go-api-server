@@ -30,7 +30,9 @@ func (h *Handler) RegisterToken(c *gin.Context) {
 		return
 	}
 
-	if err := h.useCase.RegisterFcmToken(c.Request.Context(), memberID, request.FcmToken); err != nil {
+	token := request.TrimmedToken()
+
+	if err := h.useCase.RegisterFcmToken(c.Request.Context(), memberID, token); err != nil {
 		if resp, ok := sharedError.ResolveDomainError(err); ok {
 			sharedHttp.RespondError(c, err, resp)
 			return

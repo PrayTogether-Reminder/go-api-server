@@ -34,6 +34,11 @@ func getErrorMessage(fe validator.FieldError) string {
 	switch fe.Tag() {
 	case "required":
 		return "필수 항목을 입력해 주세요."
+	case "notblank":
+		if fe.Field() == "FcmToken" {
+			return "값이 비어 있습니다."
+		}
+		return "공백만 입력할 수 없습니다."
 	case "email":
 		return "이메일 형식이 올바르지 않습니다."
 	case "min":
