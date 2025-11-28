@@ -129,5 +129,6 @@ func Setup(router *gin.Engine, cfg *config.Config, db *database.DB) {
 	fcmTokenV1.Use(middleware.JWT(cfg))
 	{
 		fcmTokenV1.POST("", fcmTokenHandler.RegisterToken)
+		fcmTokenV1.DELETE("", fcmTokenHandler.DeleteToken)
 	}
 }

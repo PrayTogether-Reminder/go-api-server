@@ -26,3 +26,10 @@ func (r *FcmTokenRepository) DeleteByMemberID(ctx context.Context, db *gorm.DB, 
 		Where("member_id = ?", memberID).
 		Delete(&model.FcmToken{}).Error
 }
+
+// DeleteByTokenAndMemberID removes a token only if both token value and owner match.
+func (r *FcmTokenRepository) DeleteByTokenAndMemberID(ctx context.Context, db *gorm.DB, token string, memberID int64) error {
+	return db.WithContext(ctx).
+		Where("member_id = ? AND token = ?", memberID, token).
+		Delete(&model.FcmToken{}).Error
+}

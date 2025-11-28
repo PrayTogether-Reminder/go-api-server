@@ -37,3 +37,13 @@ func (u *FcmTokenUseCase) RegisterFcmToken(ctx context.Context, memberID int64, 
 		return nil
 	})
 }
+
+// DeleteFcmToken removes a member's token matching the provided value.
+func (u *FcmTokenUseCase) DeleteFcmToken(ctx context.Context, memberID int64, token string) error {
+	return database.WithTransaction(ctx, u.db, func(tx *gorm.DB) error {
+		if err := u.fcmTokenService.DeleteByMemberID(ctx, tx, token, memberID); err != nil {
+			return err
+		}
+		return nil
+	})
+}

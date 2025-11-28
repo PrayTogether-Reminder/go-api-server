@@ -44,3 +44,30 @@ func (h *Handler) RegisterToken(c *gin.Context) {
 
 	c.Status(http.StatusOK)
 }
+
+// DeleteToken handles DELETE /api/v1/fcm-token requests.
+func (h *Handler) DeleteToken(c *gin.Context) {
+	memberID, ok := sharedHttp.RequireMemberID(c)
+	if !ok {
+		return
+	}
+
+	var request DeleteFcmTokenRequest
+	if !sharedHttp.BindJSON(c, &request) {
+		return
+	}
+
+	token := request.TrimmedToken()
+
+	if err := h.useCase.DeleteFcmToken(c.Request.Context(), memberID, token); err != nil {
+		if resp, ok := sharedError.ResolveDomainError(err); ok {
+			sharedHttp.RespondError(c, err, resp)
+			return
+		}
+
+		sharedHttp.RespondError(c, err, sharedError.InternalServerError)
+		return
+	}
+
+	c.Status(http.StatusOK)
+}

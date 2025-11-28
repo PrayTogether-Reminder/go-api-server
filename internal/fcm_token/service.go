@@ -41,3 +41,11 @@ func (s *FcmTokenService) RegisterToken(ctx context.Context, db *gorm.DB, member
 	}
 	return nil
 }
+
+// DeleteByMemberID removes a token by value scoped to the given member.
+func (s *FcmTokenService) DeleteByMemberID(ctx context.Context, db *gorm.DB, token string, memberID int64) error {
+	if err := s.repo.DeleteByTokenAndMemberID(ctx, db, strings.TrimSpace(token), memberID); err != nil {
+		return fmt.Errorf("FCM 토큰 삭제 실패: %w", err)
+	}
+	return nil
+}
